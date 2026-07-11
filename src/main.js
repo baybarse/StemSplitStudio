@@ -158,6 +158,7 @@ function init() {
   setupResultsHandlers();
   setupLyricsHandlers();
   setupRecordingHandlers();
+  setupDawHandlers();
   setupKeyboardShortcuts();
 
   console.log('[StemSplit] App initialised');
@@ -181,7 +182,37 @@ function setupDashboardHandlers() {
 function startMode(mode) {
   currentMode = mode;
   dashboardSection.classList.add('hidden');
+  const heroSection = document.getElementById('hero-section');
+  const featuresSection = document.getElementById('features-section');
+  if (heroSection) heroSection.classList.add('hidden');
+  if (featuresSection) featuresSection.classList.add('hidden');
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  
+  if (mode === 'full') {
+    const modal = document.getElementById('full-studio-modal');
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    // Move sections to daw-workspace
+    const workspace = document.getElementById('daw-workspace-container');
+    if (uploadSection && workspace) workspace.appendChild(uploadSection);
+    if (processingSection && workspace) workspace.appendChild(processingSection);
+    if (resultsSection && workspace) workspace.appendChild(resultsSection);
+    if (lyricsSection && workspace) workspace.appendChild(lyricsSection);
+    if (recordingSection && workspace) workspace.appendChild(recordingSection);
+    if (mergerUploadSection && workspace) workspace.appendChild(mergerUploadSection);
+    
+    uploadSection.classList.remove('hidden');
+    mergerUploadSection.classList.add('hidden');
+    
+    // Switch to first tab naturally
+    const tabs = document.querySelectorAll('.daw-tab');
+    if (tabs.length > 0) {
+      tabs.forEach(t => t.classList.remove('active'));
+      tabs[0].classList.add('active');
+    }
+    return;
+  }
   
   if (mode === 'merger') {
     mergerUploadSection.classList.remove('hidden');
@@ -198,12 +229,63 @@ function startMode(mode) {
   }
 }
 
+function closeFullStudio() {
+  const modal = document.getElementById('full-studio-modal');
+  modal.classList.add('hidden');
+  document.body.style.overflow = '';
+  
+  const main = document.querySelector('.container') || document.body; // Actually, sections were directly in <div id="app"> except some
+  const appContainer = document.getElementById('app') || document.body;
+  
+  // To be safe, put them back where they usually live
+  if (uploadSection) appContainer.appendChild(uploadSection);
+  if (mergerUploadSection) appContainer.appendChild(mergerUploadSection);
+  if (processingSection) appContainer.appendChild(processingSection);
+  if (resultsSection) appContainer.appendChild(resultsSection);
+  if (recordingSection) appContainer.appendChild(recordingSection);
+  if (lyricsSection) appContainer.appendChild(lyricsSection);
+  
+  const heroSection = document.getElementById('hero-section');
+  const featuresSection = document.getElementById('features-section');
+  if (heroSection) heroSection.classList.remove('hidden');
+  if (featuresSection) featuresSection.classList.remove('hidden');
+  
+  resetToDashboard();
+}
+
 function resetToDashboard() {
   resetToUpload();
   uploadSection.classList.add('hidden');
   mergerUploadSection.classList.add('hidden');
   dashboardSection.classList.remove('hidden');
   currentMode = null;
+}
+
+// Setup DAW handlers
+function setupDawHandlers() {
+  const closeBtn = document.getElementById('close-studio-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', closeFullStudio);
+  }
+  
+  document.querySelectorAll('.daw-tab').forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      document.querySelectorAll('.daw-tab').forEach(t => t.classList.remove('active'));
+      e.target.classList.add('active');
+      
+      // We don't hide everything because DAW is an all-in-one view, 
+      // but we could scroll to the section if we want.
+      const tabName = e.target.dataset.tab;
+      let targetSection = null;
+      if (tabName === 'split') targetSection = resultsSection;
+      if (tabName === 'lyrics') targetSection = lyricsSection;
+      if (tabName === 'record') targetSection = recordingSection;
+      
+      if (targetSection && !targetSection.classList.contains('hidden')) {
+        targetSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+  });
 }
 
 function setupMergerHandlers() {

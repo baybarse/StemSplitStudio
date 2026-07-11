@@ -1655,3 +1655,113 @@ body {
     padding: 12px;
   }
 }
+
+/* ===================== FULL STUDIO MODAL (DAW) ===================== */
+#full-studio-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #0f1015; /* Deeper dark for DAW */
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.daw-header {
+  height: 60px;
+  background: #181921;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+}
+
+.daw-logo {
+  font-family: "Outfit", sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  background: var(--color-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.daw-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.daw-sidebar {
+  width: 250px;
+  background: #13141a;
+  border-right: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 0;
+}
+
+.daw-tab {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  text-align: left;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-left: 3px solid transparent;
+}
+
+.daw-tab:hover {
+  background: rgba(255,255,255,0.03);
+  color: var(--color-text-primary);
+}
+
+.daw-tab.active {
+  background: rgba(255,255,255,0.05);
+  color: var(--color-text-primary);
+  border-left-color: #a855f7;
+}
+
+.daw-workspace {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+  background: #0a0a0f;
+  position: relative;
+}
+
+/* Adjust sections when inside DAW workspace */
+#full-studio-modal section {
+  padding: 0 !important; /* Remove huge padding from main layout */
+  margin-bottom: 2rem;
+  min-height: auto;
+}
+
+#full-studio-modal .container {
+  max-width: 100%;
+  padding: 0;
+}
+
+#full-studio-modal #upload-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+#full-studio-modal .upload-area {
+  width: 100%;
+  max-width: 800px;
+}
+

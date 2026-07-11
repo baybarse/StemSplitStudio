@@ -487,6 +487,34 @@
     </footer>
   </div>
 
-  <script type="module" src="./src/main.js"></script>
-</body>
+    <!-- ===================== FULL STUDIO MODAL ===================== -->
+    <div id="full-studio-modal" class="hidden">
+      <div class="daw-header">
+        <div class="daw-logo">
+          <span style="font-size: 1.5rem;">🎹</span> StemSplit Studio
+        </div>
+        <div class="daw-top-controls">
+          <!-- Global controls can go here -->
+        </div>
+        <button id="close-studio-btn" class="btn btn-secondary" style="border-color: #ef4444; color: #ef4444;">
+          ✕ Exit Studio
+        </button>
+      </div>
+      
+      <div class="daw-body">
+        <div class="daw-sidebar">
+          <button class="daw-tab active" data-tab="split">✂️ Separation</button>
+          <button class="daw-tab" data-tab="lyrics">📝 Lyrics</button>
+          <button class="daw-tab" data-tab="record">🎤 Record</button>
+          <button class="daw-tab" data-tab="mix">🎛️ Merger</button>
+        </div>
+        
+        <div class="daw-workspace" id="daw-workspace-container">
+          <!-- The existing sections will be moved here dynamically when in Studio mode -->
+        </div>
+      </div>
+    </div>
+    
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>
