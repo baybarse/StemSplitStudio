@@ -102,7 +102,7 @@
 
           <div class="feature-detail-card" style="padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05);">
             <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;"><span style="font-size: 1.5rem;">💾</span> Advanced Exporting</h3>
-            <p style="color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.6;">Download separated stems individually, grab them all as a ZIP file, or dynamically mix selected tracks into a brand new high-quality WAV file.</p>
+            <p style="color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.6;">Download separated stems individually, grab them all as a ZIP file, or <strong>dynamically mix selected tracks into a custom WAV file using your current volume and mute settings</strong>.</p>
           </div>
 
           <div class="feature-detail-card" style="padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05);">
@@ -232,14 +232,17 @@
             </div>
             <canvas class="waveform-canvas" id="waveform-vocals" aria-label="Vocals waveform"></canvas>
             <div class="stem-controls">
-              <label class="stem-checkbox">
+              <label class="stem-checkbox" title="Select for Mix">
                 <input type="checkbox" class="stem-select" data-stem="vocals" checked>
               </label>
               <button class="play-btn" id="play-vocals" data-stem="vocals" aria-label="Play vocals">▶</button>
-              <input type="range" class="volume-slider" id="volume-vocals" data-stem="vocals" min="0" max="100" value="100" aria-label="Vocals volume">
-              <button class="solo-btn" id="solo-vocals" data-stem="vocals" aria-label="Solo vocals">S</button>
-              <button class="mute-btn" id="mute-vocals" data-stem="vocals" aria-label="Mute vocals">M</button>
-              <button class="download-btn" id="download-vocals" data-stem="vocals" aria-label="Download vocals">⬇</button>
+              <div class="volume-control-wrapper" style="display: flex; align-items: center; gap: 4px;" title="Adjust Volume">
+                <span style="font-size: 0.9rem;">🔊</span>
+                <input type="range" class="volume-slider" id="volume-vocals" data-stem="vocals" min="0" max="100" value="100" aria-label="Vocals volume">
+              </div>
+              <button class="solo-btn" id="solo-vocals" data-stem="vocals" aria-label="Solo vocals" title="Solo">S</button>
+              <button class="mute-btn" id="mute-vocals" data-stem="vocals" aria-label="Mute vocals" title="Mute">M</button>
+              <button class="download-btn" id="download-vocals" data-stem="vocals" aria-label="Download vocals" title="Download">⬇</button>
             </div>
           </div>
 
@@ -251,14 +254,17 @@
             </div>
             <canvas class="waveform-canvas" id="waveform-drums" aria-label="Drums waveform"></canvas>
             <div class="stem-controls">
-              <label class="stem-checkbox">
+              <label class="stem-checkbox" title="Select for Mix">
                 <input type="checkbox" class="stem-select" data-stem="drums" checked>
               </label>
               <button class="play-btn" id="play-drums" data-stem="drums" aria-label="Play drums">▶</button>
-              <input type="range" class="volume-slider" id="volume-drums" data-stem="drums" min="0" max="100" value="100" aria-label="Drums volume">
-              <button class="solo-btn" id="solo-drums" data-stem="drums" aria-label="Solo drums">S</button>
-              <button class="mute-btn" id="mute-drums" data-stem="drums" aria-label="Mute drums">M</button>
-              <button class="download-btn" id="download-drums" data-stem="drums" aria-label="Download drums">⬇</button>
+              <div class="volume-control-wrapper" style="display: flex; align-items: center; gap: 4px;" title="Adjust Volume">
+                <span style="font-size: 0.9rem;">🔊</span>
+                <input type="range" class="volume-slider" id="volume-drums" data-stem="drums" min="0" max="100" value="100" aria-label="Drums volume">
+              </div>
+              <button class="solo-btn" id="solo-drums" data-stem="drums" aria-label="Solo drums" title="Solo">S</button>
+              <button class="mute-btn" id="mute-drums" data-stem="drums" aria-label="Mute drums" title="Mute">M</button>
+              <button class="download-btn" id="download-drums" data-stem="drums" aria-label="Download drums" title="Download">⬇</button>
             </div>
           </div>
 
@@ -270,14 +276,17 @@
             </div>
             <canvas class="waveform-canvas" id="waveform-bass" aria-label="Bass waveform"></canvas>
             <div class="stem-controls">
-              <label class="stem-checkbox">
+              <label class="stem-checkbox" title="Select for Mix">
                 <input type="checkbox" class="stem-select" data-stem="bass" checked>
               </label>
               <button class="play-btn" id="play-bass" data-stem="bass" aria-label="Play bass">▶</button>
-              <input type="range" class="volume-slider" id="volume-bass" data-stem="bass" min="0" max="100" value="100" aria-label="Bass volume">
-              <button class="solo-btn" id="solo-bass" data-stem="bass" aria-label="Solo bass">S</button>
-              <button class="mute-btn" id="mute-bass" data-stem="bass" aria-label="Mute bass">M</button>
-              <button class="download-btn" id="download-bass" data-stem="bass" aria-label="Download bass">⬇</button>
+              <div class="volume-control-wrapper" style="display: flex; align-items: center; gap: 4px;" title="Adjust Volume">
+                <span style="font-size: 0.9rem;">🔊</span>
+                <input type="range" class="volume-slider" id="volume-bass" data-stem="bass" min="0" max="100" value="100" aria-label="Bass volume">
+              </div>
+              <button class="solo-btn" id="solo-bass" data-stem="bass" aria-label="Solo bass" title="Solo">S</button>
+              <button class="mute-btn" id="mute-bass" data-stem="bass" aria-label="Mute bass" title="Mute">M</button>
+              <button class="download-btn" id="download-bass" data-stem="bass" aria-label="Download bass" title="Download">⬇</button>
             </div>
           </div>
 
@@ -289,27 +298,31 @@
             </div>
             <canvas class="waveform-canvas" id="waveform-other" aria-label="Other instruments waveform"></canvas>
             <div class="stem-controls">
-              <label class="stem-checkbox">
+              <label class="stem-checkbox" title="Select for Mix">
                 <input type="checkbox" class="stem-select" data-stem="other" checked>
               </label>
               <button class="play-btn" id="play-other" data-stem="other" aria-label="Play other">▶</button>
-              <input type="range" class="volume-slider" id="volume-other" data-stem="other" min="0" max="100" value="100" aria-label="Other volume">
-              <button class="solo-btn" id="solo-other" data-stem="other" aria-label="Solo other">S</button>
-              <button class="mute-btn" id="mute-other" data-stem="other" aria-label="Mute other">M</button>
-              <button class="download-btn" id="download-other" data-stem="other" aria-label="Download other">⬇</button>
+              <div class="volume-control-wrapper" style="display: flex; align-items: center; gap: 4px;" title="Adjust Volume">
+                <span style="font-size: 0.9rem;">🔊</span>
+                <input type="range" class="volume-slider" id="volume-other" data-stem="other" min="0" max="100" value="100" aria-label="Other volume">
+              </div>
+              <button class="solo-btn" id="solo-other" data-stem="other" aria-label="Solo other" title="Solo">S</button>
+              <button class="mute-btn" id="mute-other" data-stem="other" aria-label="Mute other" title="Mute">M</button>
+              <button class="download-btn" id="download-other" data-stem="other" aria-label="Download other" title="Download">⬇</button>
             </div>
           </div>
         </div>
 
         <div class="results-actions">
           <div class="download-options">
-            <button id="download-selected-btn" class="btn btn-primary">
+            <button id="download-selected-btn" class="btn btn-primary" title="Download selected stems individually">
               <span class="btn-icon">⬇</span> Download Selected
             </button>
-            <button id="download-mix-btn" class="btn btn-primary">
-              <span class="btn-icon">🎵</span> Download as One Song
+            <button id="download-mix-btn" class="btn btn-primary" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.5rem 1rem;" title="Creates a mix using your current volume levels">
+              <div><span class="btn-icon">🎵</span> Download Custom Mix</div>
+              <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 2px;">(Uses current volume/mute settings)</div>
             </button>
-            <button id="download-all-btn" class="btn btn-secondary">
+            <button id="download-all-btn" class="btn btn-secondary" title="Download all stems as ZIP">
               <span class="btn-icon">📦</span> Download All as ZIP
             </button>
           </div>
