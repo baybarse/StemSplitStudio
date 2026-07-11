@@ -10,8 +10,8 @@ import { pipeline, env } from '@huggingface/transformers';
 // Use CDN for model files to avoid bundling
 env.allowLocalModels = false;
 
-/** @const {string} Whisper model to use (small = ~244MB, multilingual) */
-const MODEL_ID = 'onnx-community/whisper-small';
+/** @const {string} Whisper model to use (tiny = ~39MB, much faster for browsers) */
+const MODEL_ID = 'onnx-community/whisper-tiny';
 
 /** @const {number} Target sample rate for Whisper */
 const WHISPER_SAMPLE_RATE = 16000;
@@ -27,6 +27,20 @@ const WHISPER_SAMPLE_RATE = 16000;
 let transcriber = null;
 
 /**
+ * Detect best execution provider for transformers.js
+ * @returns {Promise<'webgpu'|'wasm'>}
+ */
+async function detectDevice() {
+  try {
+    if (navigator.gpu) {
+      const adapter = await navigator.gpu.requestAdapter();
+      if (adapter) return 'webgpu';
+    }
+  } catch (_) {}
+  return 'wasm';
+}
+
+/**
  * Extract lyrics from audio data using Whisper AI.
  * 
  * @param {Float32Array} audioData - Mono audio data (any sample rate)
@@ -40,19 +54,21 @@ export async function extractLyrics(audioData, sampleRate, options = {}) {
 
   // Initialize pipeline if not cached
   if (!transcriber) {
-    onProgress({ status: 'Loading Whisper AI model...', progress: 0 });
+    onProgress({ status: 'Detecting GPU capabilities...', progress: 0 });
+    const device = await detectDevice();
+    onProgress({ status: `Loading Whisper AI model (${device.toUpperCase()})...`, progress: 5 });
     
     transcriber = await pipeline(
       'automatic-speech-recognition',
       MODEL_ID,
       {
         dtype: 'q4', // quantized for speed/size
-        device: 'wasm', // wasm is most reliable for whisper
+        device: device, // Use WebGPU if available, else WASM
         progress_callback: (info) => {
           if (info.status === 'progress' && info.progress) {
             onProgress({ 
-              status: `Downloading model... ${info.progress.toFixed(0)}%`, 
-              progress: info.progress 
+              status: `Downloading model (~39MB)... ${info.progress.toFixed(0)}%`, 
+              progress: 5 + (info.progress * 0.95) 
             });
           } else if (info.status === 'ready') {
             onProgress({ status: 'Model ready!', progress: 100 });
