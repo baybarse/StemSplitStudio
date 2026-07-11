@@ -33,16 +33,19 @@
           <span class="gradient-text">StemSplit Studio</span>
         </h1>
         <p class="hero-subtitle">Your Ultimate In-Browser Audio Production Hub</p>
-        <p class="hero-description">
-          Way more than just a vocal remover. Isolate instruments, extract multilingual lyrics using AI, record your own vocals, and mix multiple tracks — fast, free, and 100% private.
-        </p>
-        <div class="feature-badges">
+        <div class="feature-badges primary-features">
           <span class="feature-badge"><span class="badge-icon">🌐</span> Runs in Browser</span>
           <span class="feature-badge"><span class="badge-icon">🔒</span> No Server Uploads</span>
           <span class="feature-badge"><span class="badge-icon">🎁</span> 100% Free</span>
-          <span class="feature-badge"><span class="badge-icon">📝</span> AI Lyrics</span>
-          <span class="feature-badge"><span class="badge-icon">🎙️</span> Mic Recording</span>
-          <span class="feature-badge"><span class="badge-icon">🎛️</span> Audio Mixer</span>
+        </div>
+        <div class="feature-badges secondary-features" style="margin-top: 1.5rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem;">
+          <span class="feature-badge"><span class="badge-icon">✂️</span> Stem Splitter (Vocals, Drums, Bass)</span>
+          <span class="feature-badge"><span class="badge-icon">📝</span> AI Lyrics Extractor</span>
+          <span class="feature-badge"><span class="badge-icon">🎙️</span> Mic Record + Music Mix</span>
+          <span class="feature-badge"><span class="badge-icon">🎛️</span> Advanced Track Merger</span>
+          <span class="feature-badge"><span class="badge-icon">⚡</span> WebGPU Accelerated</span>
+          <span class="feature-badge"><span class="badge-icon">💾</span> Offline Model Caching</span>
+          <span class="feature-badge"><span class="badge-icon">🌍</span> Multilingual Support</span>
         </div>
       </div>
     </section>
@@ -77,6 +80,46 @@
             <h3>Full Studio</h3>
             <p>The complete experience: Split stems, extract lyrics, record vocals, and mix everything at once.</p>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== DETAILED FEATURES SECTION ===================== -->
+    <section id="features-section" style="padding: 4rem 0; background: rgba(0,0,0,0.2);">
+      <div class="container">
+        <h2 class="section-title" style="text-align: center; margin-bottom: 3rem;">Complete Feature Overview</h2>
+        <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+          
+          <div class="feature-detail-card" style="padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05);">
+            <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;"><span style="font-size: 1.5rem;">🧠</span> State-of-the-Art AI</h3>
+            <p style="color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.6;">Powered by <strong>HTDemucs (Meta AI)</strong> for studio-quality music separation and <strong>Whisper AI</strong> for highly accurate, multilingual lyric extraction.</p>
+          </div>
+
+          <div class="feature-detail-card" style="padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05);">
+            <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;"><span style="font-size: 1.5rem;">🎚️</span> Real-time Mixer</h3>
+            <p style="color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.6;">Interactive audio mixing right in your browser. Adjust volumes, mute specific instruments, or solo a track while following the interactive waveforms.</p>
+          </div>
+
+          <div class="feature-detail-card" style="padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05);">
+            <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;"><span style="font-size: 1.5rem;">💾</span> Advanced Exporting</h3>
+            <p style="color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.6;">Download separated stems individually, grab them all as a ZIP file, or dynamically mix selected tracks into a brand new high-quality WAV file.</p>
+          </div>
+
+          <div class="feature-detail-card" style="padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05);">
+            <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;"><span style="font-size: 1.5rem;">⚡</span> WebGPU Acceleration</h3>
+            <p style="color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.6;">Leverages your computer's graphics card directly through the browser for lightning-fast AI processing, with WASM fallback for older devices.</p>
+          </div>
+
+          <div class="feature-detail-card" style="padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05);">
+            <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;"><span style="font-size: 1.5rem;">🎙️</span> Live Studio Recording</h3>
+            <p style="color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.6;">Don't just separate music—create it. Sing over uploaded backing tracks with your microphone, and export the final mixed song instantly.</p>
+          </div>
+
+          <div class="feature-detail-card" style="padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05);">
+            <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;"><span style="font-size: 1.5rem;">📦</span> Zero Server Processing</h3>
+            <p style="color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.6;">Your files never leave your computer. We download the AI models to your browser's local cache once, ensuring complete privacy and offline capabilities.</p>
+          </div>
+
         </div>
       </div>
     </section>
