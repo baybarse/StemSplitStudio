@@ -507,7 +507,30 @@ async function startProcessing() {
     recordingSection.classList.add('hidden');
 
     // Step 1: Decode audio
-    updateProcessingUI(0, 'Decoding audio file…');
+    updateProcessingUI(0, 'Decoding audio file ');
+    
+    // Fun facts interval
+    const facts = [
+      `File size: ${(currentFile.size / 1024 / 1024).toFixed(2)} MB`,
+      `Format: ${currentFile.type || 'audio/wav'}`,
+      "Demucs AI is analyzing frequencies...",
+      "Isolating vocal harmonics...",
+      "Separating drum transients...",
+      "Extracting bass frequencies...",
+      "Preparing WebGPU acceleration...",
+      "Almost there..."
+    ];
+    let factIdx = 0;
+    const factsEl = document.getElementById('processing-facts');
+    if (factsEl) factsEl.textContent = `File name: ${currentFile.name}`;
+    
+    const factsInterval = setInterval(() => {
+      if (factsEl) {
+        factsEl.textContent = facts[factIdx % facts.length];
+        factIdx++;
+      }
+    }, 3500);
+
     decodedAudio = await decodeAudioFile(currentFile);
     updateProcessingUI(5, `Audio decoded: ${decodedAudio.duration.toFixed(1)}s, ${decodedAudio.sampleRate}Hz`);
 
@@ -542,6 +565,8 @@ async function startProcessing() {
     }
 
     // Step 4: Show results
+    if (typeof factsInterval !== 'undefined') clearInterval(factsInterval);
+    if (factsEl) factsEl.textContent = '';
     showResults();
 
     // Step 5: Auto-trigger specific mode UI
@@ -552,6 +577,7 @@ async function startProcessing() {
     }
 
   } catch (err) {
+    if (typeof factsInterval !== 'undefined') clearInterval(factsInterval);
     console.error('[StemSplit] Processing error:', err);
     showError(`Processing failed: ${err.message}`);
     resetToUpload();
