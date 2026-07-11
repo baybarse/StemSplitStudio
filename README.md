@@ -58,9 +58,16 @@ That's it! No account needed, no data sent anywhere.
 
 ## 💻 Local Development
 
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 18+ (recommended: 20 LTS)
+- npm (comes with Node.js)
+
+### Setup & Run
+
 ```bash
 # Clone the repository
-git clone https://github.com/AliAlmasi/seperatorvoiceinstrument.git
+git clone https://github.com/baybarse/seperatorvoiceinstrument.git
 cd seperatorvoiceinstrument
 
 # Install dependencies
@@ -70,15 +77,20 @@ npm install
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173`.
+The app will be available at `http://localhost:5173/seperatorvoiceinstrument/`.
 
-### Build for Production
+### Build & Preview Production
 
 ```bash
+# Build for production
 npm run build
+
+# Preview the production build locally
+npm run preview
 ```
 
 The production build will be output to the `dist/` directory.
+Preview will serve it at `http://localhost:4173/seperatorvoiceinstrument/`.
 
 ---
 
