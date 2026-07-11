@@ -464,6 +464,48 @@ function showResults() {
   processingSection.classList.add('hidden');
   resultsSection.classList.remove('hidden');
 
+  const resultsGrid = document.querySelector('.results-grid');
+  const resultsActions = document.querySelector('.results-actions');
+  const downloadOptions = document.querySelector('.download-options');
+
+  // Mode specific UI adjustments
+  if (currentMode === 'lyrics') {
+    // Hide stem cards and unnecessary download options
+    if (resultsGrid) resultsGrid.style.display = 'none';
+    if (downloadOptions) downloadOptions.style.display = 'none';
+    
+    // Only show "Separate Another File" or specific actions
+    const recordBtn = document.getElementById('record-btn');
+    const extractLyricsBtn = document.getElementById('extract-lyrics-btn');
+    if (recordBtn) recordBtn.style.display = 'none';
+    if (extractLyricsBtn) extractLyricsBtn.style.display = 'none';
+  } else if (currentMode === 'recorder') {
+    // Hide stem cards, show recording UI
+    if (resultsGrid) resultsGrid.style.display = 'none';
+    if (downloadOptions) downloadOptions.style.display = 'none';
+    
+    const extractLyricsBtn = document.getElementById('extract-lyrics-btn');
+    if (extractLyricsBtn) extractLyricsBtn.style.display = 'none';
+  } else if (currentMode === 'splitter') {
+    // Show stem cards, but hide lyrics/record buttons
+    if (resultsGrid) resultsGrid.style.display = '';
+    if (downloadOptions) downloadOptions.style.display = '';
+    
+    const recordBtn = document.getElementById('record-btn');
+    const extractLyricsBtn = document.getElementById('extract-lyrics-btn');
+    if (recordBtn) recordBtn.style.display = 'none';
+    if (extractLyricsBtn) extractLyricsBtn.style.display = 'none';
+  } else {
+    // Full Studio: Show everything
+    if (resultsGrid) resultsGrid.style.display = '';
+    if (downloadOptions) downloadOptions.style.display = '';
+    
+    const recordBtn = document.getElementById('record-btn');
+    const extractLyricsBtn = document.getElementById('extract-lyrics-btn');
+    if (recordBtn) recordBtn.style.display = '';
+    if (extractLyricsBtn) extractLyricsBtn.style.display = '';
+  }
+
   // Ensure AudioContext exists
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -570,10 +612,20 @@ function setupResultsHandlers() {
   if (downloadMixBtn) downloadMixBtn.addEventListener('click', downloadMix);
   
   // Secondary actions
-  if (newSeparationBtn) newSeparationBtn.addEventListener('click', () => {
-    stopAllPlayback();
-    resetToUpload();
-  });
+  if (newSeparationBtn) {
+    newSeparationBtn.addEventListener('click', () => {
+      stopAllPlayback();
+      resetToUpload();
+    });
+  }
+
+  const resultsBackDashboardBtn = document.getElementById('results-back-dashboard-btn');
+  if (resultsBackDashboardBtn) {
+    resultsBackDashboardBtn.addEventListener('click', () => {
+      stopAllPlayback();
+      resetToDashboard();
+    });
+  }
 }
 
 // ─── Lyrics Extraction ──────────────────────────────────────────────────────
