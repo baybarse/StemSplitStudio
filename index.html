@@ -272,8 +272,13 @@
               <input type="text" id="trim-end" placeholder="00:00" style="width: 70px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.4rem; border-radius: 4px; font-family: monospace; text-align: center;">
             </label>
           </div>
-          <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin: 0; opacity: 0.9;">
-            (The specified region and your volume slider levels will be automatically applied when you click Download Mix or Download Selected Stems. You can also click on the waveforms below to jump to a specific time!)
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+            <button id="trim-isolate-btn" class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.85rem; border-color: #a855f7; color: #a855f7;">✂️ Isolate Region</button>
+            <button id="trim-mute-btn" class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.85rem; border-color: #ef4444; color: #ef4444;">🔇 Mute Region</button>
+            <button id="trim-undo-btn" class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.85rem;" disabled>↩️ Undo</button>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin: 0; margin-top: 0.5rem; opacity: 0.9;">
+            (<strong>Isolate:</strong> Silences everything outside this region. <strong>Mute:</strong> Silences this region. Applies only to checked stems. <strong>Export:</strong> Applies region & volume on download.)
           </p>
         </div>
 

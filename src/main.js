@@ -43,6 +43,7 @@ let decodedAudio = null;
 
 /** @type {Record<string, Float32Array[]>} Separated stems. */
 let stems = {};
+let originalStems = null;
 
 /** @type {Record<string, WaveformRenderer>} Waveform renderers per stem. */
 const waveformRenderers = {};
@@ -564,6 +565,17 @@ async function startProcessing() {
       });
     }
 
+    // Backup for Undo functionality
+    originalStems = {};
+    STEMS.forEach(stem => {
+      if (stems[stem]) {
+        originalStems[stem] = [
+          new Float32Array(stems[stem][0]),
+          stems[stem][1] ? new Float32Array(stems[stem][1]) : null
+        ];
+      }
+    });
+
     // Step 4: Show results
     if (typeof factsInterval !== 'undefined') clearInterval(factsInterval);
     if (factsEl) factsEl.textContent = '';
@@ -798,11 +810,94 @@ function setupResultsHandlers() {
   if (downloadSelectedBtn) downloadSelectedBtn.addEventListener('click', downloadSelectedStems);
   if (downloadMixBtn) downloadMixBtn.addEventListener('click', downloadMix);
   
-  // Secondary actions
+  const newSeparationBtn = document.getElementById('new-separation-btn');
   if (newSeparationBtn) {
     newSeparationBtn.addEventListener('click', () => {
       stopAllPlayback();
       resetToUpload();
+    });
+  }
+
+  // Region Editing (Isolate / Mute / Undo)
+  const isolateBtn = document.getElementById('trim-isolate-btn');
+  const muteBtn = document.getElementById('trim-mute-btn');
+  const undoBtn = document.getElementById('trim-undo-btn');
+
+  function applyRegionEdit(isMute) {
+    if (!decodedAudio) return;
+    const { start, end } = getTrimRegion();
+    if (start <= 0 && end >= decodedAudio.duration) return;
+    
+    const startSample = Math.floor(start * decodedAudio.sampleRate);
+    const endSample = Math.floor(Math.min(end, decodedAudio.duration) * decodedAudio.sampleRate);
+    
+    let applied = false;
+
+    STEMS.forEach(stem => {
+      if (stems[stem] && selectedState[stem]) {
+        applied = true;
+        
+        // Stop playback if playing
+        if (playingState[stem]) stopPlayback(stem);
+        
+        // Mutate array in-place
+        for (let channel = 0; channel < stems[stem].length; channel++) {
+          if (!stems[stem][channel]) continue;
+          const data = stems[stem][channel];
+          
+          for (let i = 0; i < data.length; i++) {
+            const inRegion = (i >= startSample && i <= endSample);
+            if (isMute) {
+              if (inRegion) data[i] = 0.0;
+            } else { // Isolate
+              if (!inRegion) data[i] = 0.0;
+            }
+          }
+        }
+        
+        // Redraw waveform
+        if (waveformRenderers[stem]) {
+          const buffer = createAudioBuffer(stems[stem], decodedAudio.sampleRate);
+          waveformRenderers[stem].draw(buffer.getChannelData(0));
+        }
+      }
+    });
+
+    if (applied) {
+      if (undoBtn) undoBtn.disabled = false;
+      showError(isMute ? "Region muted for selected stems!" : "Region isolated for selected stems!");
+    } else {
+      showError("Please select at least one stem to edit.");
+    }
+  }
+
+  if (isolateBtn) isolateBtn.addEventListener('click', () => applyRegionEdit(false));
+  if (muteBtn) muteBtn.addEventListener('click', () => applyRegionEdit(true));
+
+  if (undoBtn) {
+    undoBtn.addEventListener('click', () => {
+      if (!originalStems || !decodedAudio) return;
+      
+      stopAllPlayback();
+      
+      STEMS.forEach(stem => {
+        if (originalStems[stem] && stems[stem]) {
+          // Restore from backup
+          stems[stem][0].set(originalStems[stem][0]);
+          if (stems[stem][1] && originalStems[stem][1]) {
+            stems[stem][1].set(originalStems[stem][1]);
+          }
+          
+          // Redraw
+          if (waveformRenderers[stem]) {
+            const buffer = createAudioBuffer(stems[stem], decodedAudio.sampleRate);
+            waveformRenderers[stem].draw(buffer.getChannelData(0));
+          }
+        }
+      });
+      
+      undoBtn.disabled = true;
+      showError("All stems restored to original state!");
     });
   }
 
