@@ -85,7 +85,7 @@ export async function extractLyrics(audioData, sampleRate, options = {}) {
     processedAudio = resampleLinear(audioData, sampleRate, WHISPER_SAMPLE_RATE);
   }
 
-  onProgress({ status: 'Transcribing lyrics...', progress: 50 });
+  onProgress({ status: (options.task === 'translate' ? 'Translating to English...' : 'Transcribing lyrics...'), progress: 50 });
 
   // Run Whisper
   const result = await transcriber(processedAudio, {
@@ -93,10 +93,11 @@ export async function extractLyrics(audioData, sampleRate, options = {}) {
     chunk_length_s: 30,
     stride_length_s: 5,
     language: null, // auto-detect
-    task: 'transcribe',
+    task: options.task || 'transcribe',
   });
 
-  onProgress({ status: 'Lyrics extracted!', progress: 100 });
+  onProgress({ status: (options.task === 'translate' ? 'Translation complete!' : 'Lyrics extracted!'), progress: 100 });
+
 
   return {
     text: result.text || '',

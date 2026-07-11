@@ -600,8 +600,12 @@ function setupLyricsHandlers() {
 
   if (copyLyricsBtn) {
     copyLyricsBtn.addEventListener('click', () => {
-      if (lyricsResult && lyricsResult.text) {
-        navigator.clipboard.writeText(lyricsResult.text).then(() => {
+      // Prefer currently displayed text if translated
+      const textToCopy = Array.from(lyricsContent.querySelectorAll('.lyrics-line, p'))
+                              .map(el => el.textContent)
+                              .join('\n');
+      if (textToCopy) {
+        navigator.clipboard.writeText(textToCopy).then(() => {
           const original = copyLyricsBtn.innerHTML;
           copyLyricsBtn.innerHTML = '✅ Copied!';
           setTimeout(() => copyLyricsBtn.innerHTML = original, 2000);
@@ -612,12 +616,90 @@ function setupLyricsHandlers() {
 
   if (downloadLyricsBtn) {
     downloadLyricsBtn.addEventListener('click', () => {
-      if (lyricsResult && lyricsResult.text) {
-        const blob = new Blob([lyricsResult.text], { type: 'text/plain' });
+      const textToDownload = Array.from(lyricsContent.querySelectorAll('.lyrics-line, p'))
+                              .map(el => el.textContent)
+                              .join('\n');
+      if (textToDownload) {
+        const blob = new Blob([textToDownload], { type: 'text/plain' });
         const baseName = currentFile ? currentFile.name.replace(/\.[^.]+$/, '') : 'lyrics';
         downloadBlob(blob, `${baseName}_lyrics.txt`);
       }
     });
+  }
+
+  const translateBtn = document.getElementById('translate-lyrics-btn');
+  const targetLangSelect = document.getElementById('target-lang-select');
+  if (translateBtn && targetLangSelect) {
+    translateBtn.addEventListener('click', async () => {
+      if (!lyricsResult || !lyricsResult.text) return;
+      
+      const originalText = translateBtn.innerHTML;
+      translateBtn.innerHTML = '⏳ Translating...';
+      translateBtn.disabled = true;
+      
+      try {
+        const targetLang = targetLangSelect.value;
+        await translateDisplayedLyrics(targetLang);
+      } catch (err) {
+        console.error('Translation failed:', err);
+        showError('Translation failed. Please try again.');
+      } finally {
+        translateBtn.innerHTML = originalText;
+        translateBtn.disabled = false;
+      }
+    });
+  }
+}
+
+async function translateDisplayedLyrics(targetLang) {
+  // If we have chunks, translate each line separately
+  if (lyricsResult.chunks && lyricsResult.chunks.length > 0) {
+    // Collect all texts to translate
+    const lines = lyricsResult.chunks.map(chunk => chunk.text.trim()).filter(t => t.length > 0);
+    if (lines.length === 0) return;
+    
+    // Group lines into chunks to avoid URL too long (max ~2000 chars)
+    const translatedLines = [];
+    const chunkSize = 10;
+    
+    for (let i = 0; i < lines.length; i += chunkSize) {
+      const chunk = lines.slice(i, i + chunkSize);
+      const text = chunk.join('\n');
+      
+      // Call Google Translate Free API (gtx client)
+      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`);
+      if (!res.ok) throw new Error('API Error');
+      const data = await res.json();
+      
+      // Parse response
+      // data[0] contains array of parts: [ [translated, original, ...], ... ]
+      const translatedPart = data[0].map(part => part[0]).join('');
+      const splitted = translatedPart.split('\n');
+      translatedLines.push(...splitted);
+    }
+    
+    // Update DOM
+    lyricsContent.innerHTML = '';
+    lyricsResult.chunks.forEach((chunk, i) => {
+      if (!chunk.text.trim()) return;
+      const line = document.createElement('div');
+      line.className = 'lyrics-line';
+      const timeStart = formatTime(chunk.timestamp[0]);
+      
+      const transText = translatedLines[i] || chunk.text;
+      line.innerHTML = `<span class="lyrics-timestamp">[${timeStart}]</span> ${transText}`;
+      
+      lyricsContent.appendChild(line);
+    });
+    
+  } else {
+    // Single block translation
+    const text = lyricsResult.text;
+    const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`);
+    if (!res.ok) throw new Error('API Error');
+    const data = await res.json();
+    const translatedText = data[0].map(part => part[0]).join('');
+    lyricsContent.innerHTML = `<p>${translatedText}</p>`;
   }
 }
 
@@ -649,20 +731,33 @@ async function startLyricsExtraction() {
     lyricsContent.classList.remove('hidden');
     lyricsLanguage.classList.remove('hidden');
     
-    detectedLanguage.textContent = lyricsResult.language.toUpperCase();
+    // Auto-detect language using Google Translate API
+    try {
+      const textSample = lyricsResult.text ? lyricsResult.text.substring(0, 100) : '';
+      if (textSample) {
+        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(textSample)}`);
+        if (res.ok) {
+          const data = await res.json();
+          const detectedCode = data[2]; // e.g., 'tr', 'en', 'es'
+          const langNames = new Intl.DisplayNames(['en'], { type: 'language' });
+          const langName = langNames.of(detectedCode) || detectedCode;
+          detectedLanguage.textContent = `${langName} (${detectedCode})`;
+        } else {
+          detectedLanguage.textContent = 'Unknown';
+        }
+      }
+    } catch (e) {
+      detectedLanguage.textContent = 'Auto-detect failed';
+    }
     
     if (lyricsResult.chunks && lyricsResult.chunks.length > 0) {
       lyricsContent.innerHTML = '';
       lyricsResult.chunks.forEach(chunk => {
+        if (!chunk.text.trim()) return;
         const line = document.createElement('div');
         line.className = 'lyrics-line';
         const timeStart = formatTime(chunk.timestamp[0]);
         line.innerHTML = `<span class="lyrics-timestamp">[${timeStart}]</span> ${chunk.text}`;
-        
-        // Click to seek (optional enhancement)
-        line.addEventListener('click', () => {
-          // Could seek audio here
-        });
         
         lyricsContent.appendChild(line);
       });
