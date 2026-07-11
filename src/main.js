@@ -138,6 +138,7 @@ const startMergerBtn = $('start-merger-btn');
 /** @type {string|null} Current application mode ('splitter', 'lyrics', 'recorder', 'merger', 'full') */
 let currentMode = null;
 let mergerFiles = [];
+let mergerVolumes = []; // Store custom volume settings for merger
 
 // ─── Initialisation ─────────────────────────────────────────────────────────
 
@@ -180,6 +181,7 @@ function setupDashboardHandlers() {
 function startMode(mode) {
   currentMode = mode;
   dashboardSection.classList.add('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
   
   if (mode === 'merger') {
     mergerUploadSection.classList.remove('hidden');
@@ -221,6 +223,7 @@ function setupMergerHandlers() {
 function handleMergerFiles(files) {
   for (let i = 0; i < files.length; i++) {
     mergerFiles.push(files[i]);
+    mergerVolumes.push(1.0); // Default volume
   }
   
   renderMergerFileList();
@@ -230,11 +233,34 @@ function renderMergerFileList() {
   mergerFileList.innerHTML = '';
   mergerFiles.forEach((f, i) => {
     const div = document.createElement('div');
-    div.innerHTML = `${f.name} <button onclick="window.removeMergerFile(${i})">✕</button>`;
+    div.style.display = 'flex';
+    div.style.justifyContent = 'space-between';
+    div.style.alignItems = 'center';
+    div.style.padding = '0.75rem';
+    div.style.background = 'rgba(255,255,255,0.05)';
+    div.style.marginBottom = '0.5rem';
+    div.style.borderRadius = '8px';
+    
+    div.innerHTML = `
+      <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:1rem;">${f.name}</span>
+      <div style="display:flex; align-items:center; gap:0.5rem;" title="Adjust Volume">
+        <span>🔊</span>
+        <input type="range" min="0" max="1" step="0.01" value="${mergerVolumes[i]}" oninput="window.updateMergerVolume(${i}, this.value)" style="width:100px;">
+      </div>
+      <button class="btn btn-secondary" style="padding:0.2rem 0.6rem; margin-left:1rem; border-radius:4px;" onclick="window.removeMergerFile(${i})">✕</button>
+    `;
     mergerFileList.appendChild(div);
   });
   
   if (mergerFiles.length > 0) {
+    const note = document.createElement('p');
+    note.innerHTML = '💡 Your files will be mixed exactly according to the volume levels you set above.';
+    note.style.textAlign = 'center';
+    note.style.color = 'var(--color-text-secondary)';
+    note.style.marginTop = '15px';
+    note.style.fontSize = '0.95rem';
+    mergerFileList.appendChild(note);
+    
     startMergerBtn.classList.remove('hidden');
   } else {
     startMergerBtn.classList.add('hidden');
@@ -243,13 +269,18 @@ function renderMergerFileList() {
 
 window.removeMergerFile = (idx) => {
   mergerFiles.splice(idx, 1);
+  mergerVolumes.splice(idx, 1);
   renderMergerFileList();
+};
+
+window.updateMergerVolume = (idx, value) => {
+  mergerVolumes[idx] = parseFloat(value);
 };
 
 async function processMergerFiles() {
   try {
     mergerUploadSection.classList.add('hidden');
-    heroSection.classList.add('hidden');
+    processingSection.classList.remove('hidden');
     processingSection.classList.remove('hidden');
     
     updateProcessingUI(10, 'Decoding files...');
@@ -263,7 +294,7 @@ async function processMergerFiles() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const buffer = createAudioBuffer(decoded.channelData, decoded.sampleRate);
       
-      tracks.push({ buffer: buffer, volume: 1.0 });
+      tracks.push({ buffer: buffer, volume: mergerVolumes[i] });
     }
     
     updateProcessingUI(95, 'Mixing files...');
@@ -277,6 +308,7 @@ async function processMergerFiles() {
     processingSection.classList.add('hidden');
     mergerUploadSection.classList.remove('hidden');
     mergerFiles = [];
+    mergerVolumes = [];
     renderMergerFileList();
     mergerFileInput.value = '';
     
@@ -386,7 +418,7 @@ async function startProcessing() {
   try {
     // Show processing UI
     uploadSection.classList.add('hidden');
-    heroSection.classList.add('hidden');
+    processingSection.classList.remove('hidden');
     processingSection.classList.remove('hidden');
     resultsSection.classList.add('hidden');
     lyricsSection.classList.add('hidden');
