@@ -806,57 +806,6 @@ function setupResultsHandlers() {
     });
   }
 
-  // Trim Apply Button
-  const trimApplyBtn = document.getElementById('trim-apply-btn');
-  if (trimApplyBtn) {
-    trimApplyBtn.addEventListener('click', () => {
-      if (!decodedAudio) return;
-      
-      const { start, end } = getTrimRegion();
-      if (start <= 0 && end >= decodedAudio.duration) return; // Nothing to trim
-      
-      const startSample = Math.floor(start * decodedAudio.sampleRate);
-      const endSample = Math.floor(Math.min(end, decodedAudio.duration) * decodedAudio.sampleRate);
-      const newDuration = (endSample - startSample) / decodedAudio.sampleRate;
-      
-      // Stop all playback first
-      STEMS.forEach(stem => {
-        if (playingState[stem]) stopPlayback(stem);
-      });
-      
-      // Permanent Slice
-      STEMS.forEach(stem => {
-        if (stems[stem]) {
-          stems[stem] = stems[stem].map(channel => channel.slice(startSample, endSample));
-          
-          // Update waveform
-          if (waveformRenderers[stem]) {
-            const buffer = createAudioBuffer(stems[stem], decodedAudio.sampleRate);
-            waveformRenderers[stem].draw(buffer.getChannelData(0));
-            waveformRenderers[stem].setPlaybackPosition(0);
-          }
-          
-          // Reset time
-          if (audioSources[stem]) {
-            audioSources[stem].startOffset = 0;
-            delete audioSources[stem].startTime;
-          }
-        }
-      });
-      
-      // Update global duration
-      Object.defineProperty(decodedAudio, 'duration', { value: newDuration, configurable: true });
-      
-      // Clear inputs
-      const startInput = document.getElementById('trim-start');
-      const endInput = document.getElementById('trim-end');
-      if (startInput) startInput.value = '';
-      if (endInput) endInput.value = '';
-      
-      showError("Region Cropped! All stems have been permanently trimmed.");
-    });
-  }
-
   // Waveform Clicking (Seek)
   document.querySelectorAll('.waveform-canvas').forEach(canvas => {
     canvas.addEventListener('click', (e) => {
@@ -1490,12 +1439,37 @@ function applyVolume(stem) {
 
 // ─── Download ───────────────────────────────────────────────────────────────
 
-function downloadStem(stem) {
-  if (!stems[stem]) return;
+function downloadStem(stem, downloadDirectly = true) {
+  if (!stems[stem]) return null;
+  
+  const { start, end } = getTrimRegion();
+  const startSample = Math.floor(start * decodedAudio.sampleRate);
+  const endSample = Math.floor(Math.min(end, decodedAudio.duration) * decodedAudio.sampleRate);
+  const length = endSample - startSample;
+  
+  const stemData = stems[stem];
+  const volume = getEffectiveVolume(stem);
+  
+  // Create a new Float32Array to hold the cropped and volume-adjusted data
+  const processedData = [
+    new Float32Array(length),
+    new Float32Array(length)
+  ];
+  
+  for (let i = 0; i < length; i++) {
+    const srcIndex = startSample + i;
+    processedData[0][i] = (stemData[0][srcIndex] || 0) * volume;
+    processedData[1][i] = stemData[1] ? (stemData[1][srcIndex] || 0) * volume : processedData[0][i];
+  }
 
-  const wavBlob = encodeWav(stems[stem], decodedAudio.sampleRate);
-  const baseName = currentFile.name.replace(/\.[^.]+$/, '');
-  downloadBlob(wavBlob, `${baseName}_${stem}.wav`);
+  const wavBlob = encodeWav(processedData, decodedAudio.sampleRate);
+  
+  if (downloadDirectly) {
+    const baseName = currentFile.name.replace(/\.[^.]+$/, '');
+    downloadBlob(wavBlob, `${baseName}_${stem}.wav`);
+  }
+  
+  return wavBlob;
 }
 
 async function downloadAllStems() {
@@ -1516,7 +1490,7 @@ async function downloadAllStems() {
 
     STEMS.forEach((stem) => {
       if (stems[stem]) {
-        const wavBlob = encodeWav(stems[stem], decodedAudio.sampleRate);
+        const wavBlob = downloadStem(stem, false);
         folder.file(`${baseName}_${stem}.wav`, wavBlob);
       }
     });
@@ -1572,7 +1546,7 @@ async function downloadSelectedStems() {
 
     selectedStems.forEach((stem) => {
       if (stems[stem]) {
-        const wavBlob = encodeWav(stems[stem], decodedAudio.sampleRate);
+        const wavBlob = downloadStem(stem, false);
         folder.file(`${stem}.wav`, wavBlob);
       }
     });
