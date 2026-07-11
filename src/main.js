@@ -612,6 +612,10 @@ function setupResultsHandlers() {
       const selectedStems = STEMS.filter(stem => selectedState[stem]);
       if (selectedStems.length === 0) return;
       
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      
       const isAnyPlaying = selectedStems.some(stem => playingState[stem]);
       
       if (isAnyPlaying) {
