@@ -698,6 +698,86 @@ function setupResultsHandlers() {
     });
   }
 
+  // Trim Apply Button
+  const trimApplyBtn = document.getElementById('trim-apply-btn');
+  if (trimApplyBtn) {
+    trimApplyBtn.addEventListener('click', () => {
+      if (!decodedAudio) return;
+      
+      const { start, end } = getTrimRegion();
+      if (start <= 0 && end >= decodedAudio.duration) return; // Nothing to trim
+      
+      const startSample = Math.floor(start * decodedAudio.sampleRate);
+      const endSample = Math.floor(Math.min(end, decodedAudio.duration) * decodedAudio.sampleRate);
+      const newDuration = (endSample - startSample) / decodedAudio.sampleRate;
+      
+      // Stop all playback first
+      STEMS.forEach(stem => {
+        if (playingState[stem]) stopPlayback(stem);
+      });
+      
+      // Permanent Slice
+      STEMS.forEach(stem => {
+        if (stems[stem]) {
+          stems[stem] = stems[stem].map(channel => channel.slice(startSample, endSample));
+          
+          // Update waveform
+          if (waveformRenderers[stem]) {
+            const buffer = createAudioBuffer(stems[stem], decodedAudio.sampleRate);
+            waveformRenderers[stem].draw(buffer.getChannelData(0));
+            waveformRenderers[stem].setPlaybackPosition(0);
+          }
+          
+          // Reset time
+          if (audioSources[stem]) {
+            audioSources[stem].startOffset = 0;
+            delete audioSources[stem].startTime;
+          }
+        }
+      });
+      
+      // Update global duration
+      Object.defineProperty(decodedAudio, 'duration', { value: newDuration, configurable: true });
+      
+      // Clear inputs
+      const startInput = document.getElementById('trim-start');
+      const endInput = document.getElementById('trim-end');
+      if (startInput) startInput.value = '';
+      if (endInput) endInput.value = '';
+      
+      showError("Region Cropped! All stems have been permanently trimmed.");
+    });
+  }
+
+  // Waveform Clicking (Seek)
+  document.querySelectorAll('.waveform-canvas').forEach(canvas => {
+    canvas.addEventListener('click', (e) => {
+      const stem = e.target.id.replace('waveform-', '');
+      if (!decodedAudio || !stems[stem]) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const percentage = Math.max(0, Math.min(1, clickX / canvas.width));
+      const newTime = percentage * decodedAudio.duration;
+      
+      const wasPlaying = playingState[stem];
+      if (wasPlaying) stopPlayback(stem);
+      
+      if (!audioSources[stem]) {
+        audioSources[stem] = { startOffset: newTime };
+      } else {
+        audioSources[stem].startOffset = newTime;
+        delete audioSources[stem].startTime;
+      }
+      
+      if (waveformRenderers[stem]) {
+        waveformRenderers[stem].setPlaybackPosition(percentage);
+      }
+      
+      if (wasPlaying) startPlayback(stem);
+    });
+  });
+
   const resultsBackDashboardBtn = document.getElementById('results-back-dashboard-btn');
   if (resultsBackDashboardBtn) {
     resultsBackDashboardBtn.addEventListener('click', () => {
@@ -1142,18 +1222,8 @@ function startPlayback(stem) {
   const effectiveVolume = getEffectiveVolume(stem);
   gainNode.gain.value = effectiveVolume;
 
-  const { start, end } = getTrimRegion();
-  let startOffset = audioSources[stem]?.startOffset || 0;
-  
-  if (startOffset < start) startOffset = start;
-  if (startOffset >= end) startOffset = start;
-  
-  const durationToPlay = end - startOffset;
-  if (durationToPlay > 0) {
-    source.start(0, startOffset, durationToPlay);
-  } else {
-    source.start(0, startOffset);
-  }
+  const startOffset = audioSources[stem]?.startOffset || 0;
+  source.start(0, startOffset);
 
   audioSources[stem] = {
     source,
@@ -1312,26 +1382,10 @@ function applyVolume(stem) {
 
 // ─── Download ───────────────────────────────────────────────────────────────
 
-function getTrimmedStemData(stem) {
-  if (!stems[stem]) return null;
-  
-  let data = stems[stem];
-  const { start, end } = getTrimRegion();
-  
-  if (start > 0 || (end !== Infinity && end < decodedAudio.duration)) {
-    const startSample = Math.floor(start * decodedAudio.sampleRate);
-    const endSample = Math.floor(Math.min(end, decodedAudio.duration) * decodedAudio.sampleRate);
-    data = data.map(channel => channel.slice(startSample, endSample));
-  }
-  
-  return data;
-}
-
 function downloadStem(stem) {
-  const data = getTrimmedStemData(stem);
-  if (!data) return;
+  if (!stems[stem]) return;
 
-  const wavBlob = encodeWav(data, decodedAudio.sampleRate);
+  const wavBlob = encodeWav(stems[stem], decodedAudio.sampleRate);
   const baseName = currentFile.name.replace(/\.[^.]+$/, '');
   downloadBlob(wavBlob, `${baseName}_${stem}.wav`);
 }
@@ -1353,9 +1407,8 @@ async function downloadAllStems() {
     const folder = zip.folder(baseName + '_stems');
 
     STEMS.forEach((stem) => {
-      const data = getTrimmedStemData(stem);
-      if (data) {
-        const wavBlob = encodeWav(data, decodedAudio.sampleRate);
+      if (stems[stem]) {
+        const wavBlob = encodeWav(stems[stem], decodedAudio.sampleRate);
         folder.file(`${baseName}_${stem}.wav`, wavBlob);
       }
     });
@@ -1449,23 +1502,7 @@ async function downloadMix() {
     // Create a new offline context for mixing
     // Use the duration of the original audio for the mix
     const sampleRate = decodedAudio.sampleRate;
-    
-    // Determine duration and offset for trimming
-    const { start, end } = getTrimRegion();
-    let renderDuration = decodedAudio.duration;
-    if (start > 0 || (end !== Infinity && end < renderDuration)) {
-      renderDuration = Math.min(end, decodedAudio.duration) - start;
-    }
-    
-    if (renderDuration <= 0) {
-      showError("Invalid trim region.");
-      downloadMixBtn.innerHTML = '<span class="btn-icon">✨</span> Download as One Song';
-      downloadMixBtn.disabled = false;
-      return;
-    }
-
-    const length = Math.floor(renderDuration * sampleRate);
-    const startSampleOffset = Math.floor(start * sampleRate);
+    const length = Math.floor(decodedAudio.duration * sampleRate);
     
     // We mix manually by adding Float32Arrays to avoid OfflineAudioContext 
     // rendering limits and resampler issues.
@@ -1482,34 +1519,28 @@ async function downloadMix() {
       const r = stems[stem][1] || stems[stem][0]; // mono fallback
       
       for (let i = 0; i < length; i++) {
-        const srcIdx = i + startSampleOffset;
-        if (srcIdx < l.length) {
-          mixedL[i] += (l[srcIdx] || 0) * vol;
-          mixedR[i] += (r[srcIdx] || 0) * vol;
+        if (i < l.length) {
+          mixedL[i] += (l[i] || 0) * vol;
+          mixedR[i] += (r[i] || 0) * vol;
         }
       }
     });
     
     // Mix recorded tracks
-    // (Note: This is a simplified mix that just starts tracks from 0. 
-    // Real DAWs allow positioning, but for this simple app they mix from start)
     for (const track of selectedTracks) {
       const vol = track.isMuted ? 0 : track.volume;
       const l = track.data[0];
       const r = track.data[1] || track.data[0];
       
-      // Resample track if needed
       let trackL = l, trackR = r;
       if (track.sampleRate !== sampleRate) {
         // Simplified fallback
       }
       
-      for (let i = 0; i < length; i++) {
-        const srcIdx = i + startSampleOffset;
-        if (srcIdx < trackL.length) {
-          mixedL[i] += (trackL[srcIdx] || 0) * vol;
-          mixedR[i] += (trackR[srcIdx] || 0) * vol;
-        }
+      const trackLength = Math.min(length, trackL.length);
+      for (let i = 0; i < trackLength; i++) {
+        mixedL[i] += (trackL[i] || 0) * vol;
+        mixedR[i] += (trackR[i] || 0) * vol;
       }
     }
     
@@ -1711,7 +1742,10 @@ function updateTimeDisplays() {
       const timeDisplay = document.getElementById(`time-${stem}`);
       if (timeDisplay) {
         const time = getCurrentTime(stem);
-        timeDisplay.textContent = `${formatTime(time)} / ${totalDuration}`;
+        const newText = `${formatTime(time)} / ${totalDuration}`;
+        if (timeDisplay.textContent !== newText) {
+          timeDisplay.textContent = newText;
+        }
       }
     });
   }

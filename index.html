@@ -267,9 +267,10 @@
               End:
               <input type="text" id="trim-end" placeholder="00:00" style="width: 70px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.4rem; border-radius: 4px; font-family: monospace; text-align: center;">
             </label>
+            <button id="trim-apply-btn" class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.9rem;">Apply Crop</button>
           </div>
-          <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin: 0; opacity: 0.7;">
-            (Leave blank to export the entire song. Applies to Playback, Custom Mix, and individual Stem downloads.)
+          <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin: 0; opacity: 0.9;">
+            (Click 'Apply Crop' to permanently slice the song to the exact Start and End times. This updates the waveforms, playback, and all downloads instantly. You can also click on the waveforms below to jump to a specific time!)
           </p>
         </div>
 
@@ -281,7 +282,7 @@
               <h3>Vocals</h3>
               <span id="time-vocals" style="margin-left: auto; font-family: monospace; font-size: 0.9rem; color: var(--color-text-secondary);">00:00 / 00:00</span>
             </div>
-            <canvas class="waveform-canvas" id="waveform-vocals" aria-label="Vocals waveform"></canvas>
+            <canvas class="waveform-canvas" id="waveform-vocals" aria-label="Vocals waveform" style="cursor: pointer;" title="Click to seek"></canvas>
             <div class="stem-controls">
               <label class="stem-checkbox" title="Select for Mix">
                 <input type="checkbox" class="stem-select" data-stem="vocals" checked>
@@ -304,7 +305,7 @@
               <h3>Drums</h3>
               <span id="time-drums" style="margin-left: auto; font-family: monospace; font-size: 0.9rem; color: var(--color-text-secondary);">00:00 / 00:00</span>
             </div>
-            <canvas class="waveform-canvas" id="waveform-drums" aria-label="Drums waveform"></canvas>
+            <canvas class="waveform-canvas" id="waveform-drums" aria-label="Drums waveform" style="cursor: pointer;" title="Click to seek"></canvas>
             <div class="stem-controls">
               <label class="stem-checkbox" title="Select for Mix">
                 <input type="checkbox" class="stem-select" data-stem="drums" checked>
@@ -327,7 +328,7 @@
               <h3>Bass</h3>
               <span id="time-bass" style="margin-left: auto; font-family: monospace; font-size: 0.9rem; color: var(--color-text-secondary);">00:00 / 00:00</span>
             </div>
-            <canvas class="waveform-canvas" id="waveform-bass" aria-label="Bass waveform"></canvas>
+            <canvas class="waveform-canvas" id="waveform-bass" aria-label="Bass waveform" style="cursor: pointer;" title="Click to seek"></canvas>
             <div class="stem-controls">
               <label class="stem-checkbox" title="Select for Mix">
                 <input type="checkbox" class="stem-select" data-stem="bass" checked>
@@ -350,7 +351,7 @@
               <h3>Other</h3>
               <span id="time-other" style="margin-left: auto; font-family: monospace; font-size: 0.9rem; color: var(--color-text-secondary);">00:00 / 00:00</span>
             </div>
-            <canvas class="waveform-canvas" id="waveform-other" aria-label="Other instruments waveform"></canvas>
+            <canvas class="waveform-canvas" id="waveform-other" aria-label="Other instruments waveform" style="cursor: pointer;" title="Click to seek"></canvas>
             <div class="stem-controls">
               <label class="stem-checkbox" title="Select for Mix">
                 <input type="checkbox" class="stem-select" data-stem="other" checked>
