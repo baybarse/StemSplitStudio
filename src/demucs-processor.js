@@ -14,6 +14,7 @@ import { DemucsProcessor as DemucsWebProcessor, CONSTANTS } from 'demucs-web';
 import { ModelCache } from './model-cache.js';
 
 // ─── ONNX Runtime configuration ─────────────────────────────────────────────
+ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0/dist/';
 ort.env.wasm.numThreads = navigator.hardwareConcurrency || 4;
 ort.env.wasm.simd = true;
 
