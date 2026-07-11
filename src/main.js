@@ -1286,8 +1286,23 @@ function renderRecordedTracks() {
     vol.addEventListener('input', (e) => track.volume = parseInt(e.target.value) / 100);
     
     // Download
-    el.querySelector('.track-download-btn').addEventListener('click', () => {
-      downloadBlob(track.blob, `${track.name}.webm`);
+    const downloadBtn = el.querySelector('.track-download-btn');
+    downloadBtn.addEventListener('click', async () => {
+      downloadBtn.textContent = '⏳';
+      downloadBtn.disabled = true;
+      
+      // Let UI update
+      await new Promise(r => setTimeout(r, 50));
+      
+      try {
+        const wavBlob = encodeWav(track.data, track.sampleRate);
+        downloadBlob(wavBlob, `${track.name}.wav`);
+      } catch (err) {
+        showError("Failed to download track: " + err.message);
+      } finally {
+        downloadBtn.textContent = '⬇';
+        downloadBtn.disabled = false;
+      }
     });
     
     // Delete
