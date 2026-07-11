@@ -620,7 +620,23 @@ function setupResultsHandlers() {
         });
         playSelectedBtn.innerHTML = '<span class="btn-icon" style="font-size: 1.2rem;">▶</span> Play Selected';
       } else {
+        // Find highest current time among selected stems to sync them
+        let syncTime = 0;
         selectedStems.forEach(stem => {
+          const t = getCurrentTime(stem);
+          if (t > syncTime) syncTime = t;
+        });
+        
+        selectedStems.forEach(stem => {
+          if (!audioSources[stem]) {
+            audioSources[stem] = { startOffset: 0 };
+          }
+          audioSources[stem].startOffset = syncTime;
+          
+          if (waveformRenderers[stem] && decodedAudio) {
+            waveformRenderers[stem].setPlaybackPosition(syncTime / decodedAudio.duration);
+          }
+          
           if (!playingState[stem]) startPlayback(stem);
         });
         playSelectedBtn.innerHTML = '<span class="btn-icon" style="font-size: 1.2rem;">⏸</span> Pause Selected';
