@@ -252,6 +252,27 @@
           </button>
         </div>
 
+        <!-- Trim Controls -->
+        <div class="trim-controls-container" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.2rem;">✂️</span>
+            <span style="font-weight: 600;">Export Region:</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--color-text-secondary); font-size: 0.9rem;">
+              Start:
+              <input type="text" id="trim-start" placeholder="00:00" style="width: 70px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.4rem; border-radius: 4px; font-family: monospace; text-align: center;">
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--color-text-secondary); font-size: 0.9rem;">
+              End:
+              <input type="text" id="trim-end" placeholder="00:00" style="width: 70px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.4rem; border-radius: 4px; font-family: monospace; text-align: center;">
+            </label>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin: 0; opacity: 0.7;">
+            (Leave blank to export the entire song. Applies to Playback, Custom Mix, and individual Stem downloads.)
+          </p>
+        </div>
+
         <div class="stems-grid">
           <!-- Vocals Stem Card -->
           <div class="stem-card" data-stem="vocals" data-color="purple">

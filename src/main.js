@@ -631,6 +631,10 @@ function setupResultsHandlers() {
           if (t > syncTime) syncTime = t;
         });
         
+        const { start, end } = getTrimRegion();
+        if (syncTime < start) syncTime = start;
+        if (syncTime >= end) syncTime = start;
+        
         selectedStems.forEach(stem => {
           if (!audioSources[stem]) {
             audioSources[stem] = { startOffset: 0 };
@@ -902,10 +906,19 @@ async function startLyricsExtraction() {
 }
 
 function formatTime(seconds) {
-  if (!seconds) return '00:00';
+  if (isNaN(seconds) || seconds === undefined || seconds === null) return '00:00';
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+function parseTime(timeStr) {
+  if (!timeStr) return null;
+  const parts = timeStr.split(':');
+  if (parts.length === 2) {
+    return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+  }
+  return parseFloat(timeStr);
 }
 
 // ─── Recording Studio ───────────────────────────────────────────────────────
@@ -1129,8 +1142,18 @@ function startPlayback(stem) {
   const effectiveVolume = getEffectiveVolume(stem);
   gainNode.gain.value = effectiveVolume;
 
-  const startOffset = audioSources[stem]?.startOffset || 0;
-  source.start(0, startOffset);
+  const { start, end } = getTrimRegion();
+  let startOffset = audioSources[stem]?.startOffset || 0;
+  
+  if (startOffset < start) startOffset = start;
+  if (startOffset >= end) startOffset = start;
+  
+  const durationToPlay = end - startOffset;
+  if (durationToPlay > 0) {
+    source.start(0, startOffset, durationToPlay);
+  } else {
+    source.start(0, startOffset);
+  }
 
   audioSources[stem] = {
     source,
@@ -1195,9 +1218,28 @@ function stopAllPlayback() {
 
 function getCurrentTime(stem) {
   if (!audioSources[stem] || !audioCtx) return 0;
+  if (!playingState[stem]) return audioSources[stem].startOffset || 0;
+  
   const { startTime, buffer } = audioSources[stem];
+  if (startTime === undefined) return audioSources[stem].startOffset || 0;
+  
   const elapsed = audioCtx.currentTime - startTime;
-  return Math.min(elapsed, buffer.duration);
+  return Math.max(0, Math.min(elapsed, buffer.duration));
+}
+
+function getTrimRegion() {
+  const startInput = document.getElementById('trim-start');
+  const endInput = document.getElementById('trim-end');
+  
+  let start = parseTime(startInput ? startInput.value : '');
+  let end = parseTime(endInput ? endInput.value : '');
+  
+  if (start === null || isNaN(start)) start = 0;
+  if (end === null || isNaN(end) || end <= start) {
+    end = decodedAudio ? decodedAudio.duration : Infinity;
+  }
+  
+  return { start, end };
 }
 
 function updatePlayButton(stem, isPlaying) {
@@ -1270,10 +1312,26 @@ function applyVolume(stem) {
 
 // ─── Download ───────────────────────────────────────────────────────────────
 
-function downloadStem(stem) {
-  if (!stems[stem]) return;
+function getTrimmedStemData(stem) {
+  if (!stems[stem]) return null;
+  
+  let data = stems[stem];
+  const { start, end } = getTrimRegion();
+  
+  if (start > 0 || (end !== Infinity && end < decodedAudio.duration)) {
+    const startSample = Math.floor(start * decodedAudio.sampleRate);
+    const endSample = Math.floor(Math.min(end, decodedAudio.duration) * decodedAudio.sampleRate);
+    data = data.map(channel => channel.slice(startSample, endSample));
+  }
+  
+  return data;
+}
 
-  const wavBlob = encodeWav(stems[stem], decodedAudio.sampleRate);
+function downloadStem(stem) {
+  const data = getTrimmedStemData(stem);
+  if (!data) return;
+
+  const wavBlob = encodeWav(data, decodedAudio.sampleRate);
   const baseName = currentFile.name.replace(/\.[^.]+$/, '');
   downloadBlob(wavBlob, `${baseName}_${stem}.wav`);
 }
@@ -1295,9 +1353,10 @@ async function downloadAllStems() {
     const folder = zip.folder(baseName + '_stems');
 
     STEMS.forEach((stem) => {
-      if (stems[stem]) {
-        const wavBlob = encodeWav(stems[stem], decodedAudio.sampleRate);
-        folder.file(`${stem}.wav`, wavBlob);
+      const data = getTrimmedStemData(stem);
+      if (data) {
+        const wavBlob = encodeWav(data, decodedAudio.sampleRate);
+        folder.file(`${baseName}_${stem}.wav`, wavBlob);
       }
     });
 
@@ -1390,7 +1449,23 @@ async function downloadMix() {
     // Create a new offline context for mixing
     // Use the duration of the original audio for the mix
     const sampleRate = decodedAudio.sampleRate;
-    const length = Math.floor(decodedAudio.duration * sampleRate);
+    
+    // Determine duration and offset for trimming
+    const { start, end } = getTrimRegion();
+    let renderDuration = decodedAudio.duration;
+    if (start > 0 || (end !== Infinity && end < renderDuration)) {
+      renderDuration = Math.min(end, decodedAudio.duration) - start;
+    }
+    
+    if (renderDuration <= 0) {
+      showError("Invalid trim region.");
+      downloadMixBtn.innerHTML = '<span class="btn-icon">✨</span> Download as One Song';
+      downloadMixBtn.disabled = false;
+      return;
+    }
+
+    const length = Math.floor(renderDuration * sampleRate);
+    const startSampleOffset = Math.floor(start * sampleRate);
     
     // We mix manually by adding Float32Arrays to avoid OfflineAudioContext 
     // rendering limits and resampler issues.
@@ -1407,8 +1482,11 @@ async function downloadMix() {
       const r = stems[stem][1] || stems[stem][0]; // mono fallback
       
       for (let i = 0; i < length; i++) {
-        mixedL[i] += (l[i] || 0) * vol;
-        mixedR[i] += (r[i] || 0) * vol;
+        const srcIdx = i + startSampleOffset;
+        if (srcIdx < l.length) {
+          mixedL[i] += (l[srcIdx] || 0) * vol;
+          mixedR[i] += (r[srcIdx] || 0) * vol;
+        }
       }
     });
     
@@ -1423,14 +1501,15 @@ async function downloadMix() {
       // Resample track if needed
       let trackL = l, trackR = r;
       if (track.sampleRate !== sampleRate) {
-        // Simplified: using OfflineContext to resample recorded track would be better,
-        // but for now we assume they match or we just add what we can
+        // Simplified fallback
       }
       
-      const trackLength = Math.min(length, trackL.length);
-      for (let i = 0; i < trackLength; i++) {
-        mixedL[i] += (trackL[i] || 0) * vol;
-        mixedR[i] += (trackR[i] || 0) * vol;
+      for (let i = 0; i < length; i++) {
+        const srcIdx = i + startSampleOffset;
+        if (srcIdx < trackL.length) {
+          mixedL[i] += (trackL[srcIdx] || 0) * vol;
+          mixedR[i] += (trackR[srcIdx] || 0) * vol;
+        }
       }
     }
     
