@@ -38,22 +38,20 @@
           Everything runs locally in your browser — fast, free, and completely private.
         </p>
         <div class="feature-badges">
-          <span class="feature-badge">
-            <span class="badge-icon">🌐</span> Browser-based
-          </span>
-          <span class="feature-badge">
-            <span class="badge-icon">🔒</span> No Upload Needed
-          </span>
-          <span class="feature-badge">
-            <span class="badge-icon">🎁</span> Free &amp; Private
-          </span>
+          <span class="feature-badge"><span class="badge-icon">🌐</span> Browser-based</span>
+          <span class="feature-badge"><span class="badge-icon">🔒</span> No Upload Needed</span>
+          <span class="feature-badge"><span class="badge-icon">🎁</span> Free &amp; Private</span>
+          <span class="feature-badge"><span class="badge-icon">📝</span> AI Lyrics Extractor</span>
+          <span class="feature-badge"><span class="badge-icon">🎙️</span> Studio Recording</span>
+          <span class="feature-badge"><span class="badge-icon">🎛️</span> Advanced Mixdown</span>
         </div>
       </div>
     </section>
 
     <!-- ===================== UPLOAD SECTION ===================== -->
-    <section id="upload-section">
+    <section id="upload-section" class="hidden">
       <div class="container">
+        <button id="back-to-dashboard-btn" class="btn btn-ghost" style="margin-bottom: 1.5rem;">⬅ Back to Dashboard</button>
         <div id="upload-area" role="button" tabindex="0" aria-label="Upload audio file">
           <div class="upload-icon" aria-hidden="true">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -76,6 +74,132 @@
             </div>
             <button id="remove-file-btn" class="remove-file-btn" aria-label="Remove file">✕</button>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== MERGER UPLOAD SECTION ===================== -->
+    <section id="merger-upload-section" class="hidden">
+      <div class="container">
+        <button id="merger-back-to-dashboard-btn" class="btn btn-ghost" style="margin-bottom: 1.5rem;">⬅ Back to Dashboard</button>
+        <div id="merger-upload-area" style="text-align: center; border: 2px dashed rgba(255,255,255,0.2); border-radius: 1rem; padding: 3rem 2rem; cursor: pointer; background: rgba(255,255,255,0.02);" role="button" tabindex="0" aria-label="Upload multiple audio files">
+          <div class="upload-icon" aria-hidden="true">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <h2 class="upload-title">Drop your audio files here to merge</h2>
+          <p class="upload-text">or click to browse</p>
+          <p class="upload-formats">Supports MP3, WAV, FLAC, OGG, M4A</p>
+          <input type="file" id="merger-file-input" accept="audio/*,.mp3,.wav,.flac,.ogg,.m4a" multiple hidden>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== DASHBOARD SECTION ===================== -->
+    <section id="dashboard-section">
+      <div class="container">
+        <h2 class="section-title" style="text-align: center; margin-bottom: 2rem;">Select a Tool</h2>
+        <div class="dashboard-grid">
+          <div class="dashboard-card" data-mode="splitter">
+            <div class="card-icon">✂️</div>
+            <h3>Stem Splitter</h3>
+            <p>Separate vocals, drums, bass, and other instruments.</p>
+          </div>
+          <div class="dashboard-card" data-mode="lyrics">
+            <div class="card-icon">📝</div>
+            <h3>Lyrics Extractor</h3>
+            <p>Instantly transcribe vocals into text using AI.</p>
+          </div>
+          <div class="dashboard-card" data-mode="recorder">
+            <div class="card-icon">🎙️</div>
+            <h3>Recording Studio</h3>
+            <p>Upload a backing track and record your vocals over it.</p>
+          </div>
+          <div class="dashboard-card" data-mode="merger">
+            <div class="card-icon">🎛️</div>
+            <h3>Audio Merger</h3>
+            <p>Mix multiple audio files together and adjust volumes.</p>
+          </div>
+          <div class="dashboard-card" data-mode="full">
+            <div class="card-icon">✨</div>
+            <h3>Full Studio</h3>
+            <p>The all-in-one experience (Split, Lyrics, Record & Mix).</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== UPLOAD SECTION ===================== -->
+    <section id="upload-section" class="hidden">
+      <div class="container">
+        <button id="back-to-dashboard-btn" class="secondary-btn" style="margin-bottom: 20px;">⬅ Back to Dashboard</button>
+        <div id="upload-area" role="button" tabindex="0" aria-label="Upload audio file">
+          <div class="upload-icon" aria-hidden="true">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <h2 class="upload-title">Drop your audio file here</h2>
+          <p class="upload-text">or click to browse</p>
+          <p class="upload-formats">Supports MP3, WAV, FLAC, OGG, M4A • Max 20 MB</p>
+          <input type="file" id="file-input" accept="audio/*,.mp3,.wav,.flac,.ogg,.m4a" hidden>
+        </div>
+        <div id="file-info" class="file-info hidden">
+          <div class="file-info-inner">
+            <span class="file-icon">🎵</span>
+            <div class="file-details">
+              <p id="file-name" class="file-name">filename.mp3</p>
+              <p id="file-size" class="file-size">0 MB</p>
+            </div>
+            <button id="remove-file-btn" class="remove-file-btn" aria-label="Remove file">✕</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== MERGER UPLOAD SECTION ===================== -->
+    <section id="merger-upload-section" class="hidden">
+      <div class="container">
+        <button id="back-to-dashboard-btn-2" class="secondary-btn back-btn" style="margin-bottom: 20px;">⬅ Back to Dashboard</button>
+        <div id="merger-upload-area" class="upload-area" role="button" tabindex="0" aria-label="Upload multiple audio files">
+          <div class="upload-icon" aria-hidden="true">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <h2 class="upload-title">Drop multiple audio files here</h2>
+          <p class="upload-text">or click to browse</p>
+          <p class="upload-formats">Supports MP3, WAV, FLAC, OGG, M4A</p>
+          <input type="file" id="merger-file-input" accept="audio/*,.mp3,.wav,.flac,.ogg,.m4a" multiple hidden>
+        </div>
+        <div id="merger-file-list" class="merger-file-list" style="margin-top: 20px;"></div>
+        <button id="start-merger-btn" class="primary-btn hidden" style="margin-top: 20px; width: 100%;">Mix Files Now</button>
+      </div>
+    </section>
+
+    <!-- ===================== MERGER UPLOAD SECTION ===================== -->
+    <section id="merger-upload-section" class="hidden">
+      <div class="container">
+        <button id="merger-back-to-dashboard-btn" class="btn btn-ghost" style="margin-bottom: 1.5rem;">⬅ Back to Dashboard</button>
+        <div id="merger-upload-area" style="text-align: center; border: 2px dashed rgba(255,255,255,0.2); border-radius: 1rem; padding: 3rem 2rem; cursor: pointer; background: rgba(255,255,255,0.02);" role="button" tabindex="0" aria-label="Upload multiple audio files">
+          <div class="upload-icon" aria-hidden="true">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <h2 class="upload-title">Drop your audio files here to merge</h2>
+          <p class="upload-text">or click to browse</p>
+          <p class="upload-formats">Supports MP3, WAV, FLAC, OGG, M4A</p>
+          <input type="file" id="merger-file-input" accept="audio/*,.mp3,.wav,.flac,.ogg,.m4a" multiple hidden>
         </div>
       </div>
     </section>

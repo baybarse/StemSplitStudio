@@ -126,6 +126,19 @@ const recordingCanvas     = $('recording-canvas');
 const recordingTime       = $('recording-time');
 const recordedTracksDiv   = $('recorded-tracks');
 
+// New DOM elements for Dashboard
+const dashboardSection = $('dashboard-section');
+const backToDashboardBtns = [$('back-to-dashboard-btn'), $('back-to-dashboard-btn-2')];
+const mergerUploadSection = $('merger-upload-section');
+const mergerFileInput = $('merger-file-input');
+const mergerUploadArea = $('merger-upload-area');
+const mergerFileList = $('merger-file-list');
+const startMergerBtn = $('start-merger-btn');
+
+/** @type {string|null} Current application mode ('splitter', 'lyrics', 'recorder', 'merger', 'full') */
+let currentMode = null;
+let mergerFiles = [];
+
 // ─── Initialisation ─────────────────────────────────────────────────────────
 
 function init() {
@@ -138,13 +151,140 @@ function init() {
     selectedState[stem] = true;
   });
 
+  setupDashboardHandlers();
   setupUploadHandlers();
+  setupMergerHandlers();
   setupResultsHandlers();
   setupLyricsHandlers();
   setupRecordingHandlers();
   setupKeyboardShortcuts();
 
   console.log('[StemSplit] App initialised');
+}
+
+function setupDashboardHandlers() {
+  document.querySelectorAll('.dashboard-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      const mode = e.currentTarget.dataset.mode;
+      startMode(mode);
+    });
+  });
+
+  backToDashboardBtns.forEach(btn => {
+    if (btn) btn.addEventListener('click', () => {
+      resetToDashboard();
+    });
+  });
+}
+
+function startMode(mode) {
+  currentMode = mode;
+  dashboardSection.classList.add('hidden');
+  
+  if (mode === 'merger') {
+    mergerUploadSection.classList.remove('hidden');
+  } else {
+    uploadSection.classList.remove('hidden');
+    // Change upload text based on mode
+    if (mode === 'lyrics') {
+      $('.upload-title').textContent = 'Upload song for Lyrics Extraction';
+    } else if (mode === 'recorder') {
+      $('.upload-title').textContent = 'Upload backing track for Recording';
+    } else {
+      $('.upload-title').textContent = 'Drop your audio file here';
+    }
+  }
+}
+
+function resetToDashboard() {
+  resetToUpload();
+  uploadSection.classList.add('hidden');
+  mergerUploadSection.classList.add('hidden');
+  dashboardSection.classList.remove('hidden');
+  currentMode = null;
+}
+
+function setupMergerHandlers() {
+  if (!mergerUploadArea) return;
+  
+  mergerUploadArea.addEventListener('click', () => mergerFileInput.click());
+  
+  mergerFileInput.addEventListener('change', (e) => {
+    handleMergerFiles(e.target.files);
+  });
+  
+  startMergerBtn.addEventListener('click', () => {
+    processMergerFiles();
+  });
+}
+
+function handleMergerFiles(files) {
+  for (let i = 0; i < files.length; i++) {
+    mergerFiles.push(files[i]);
+  }
+  
+  renderMergerFileList();
+}
+
+function renderMergerFileList() {
+  mergerFileList.innerHTML = '';
+  mergerFiles.forEach((f, i) => {
+    const div = document.createElement('div');
+    div.innerHTML = `${f.name} <button onclick="window.removeMergerFile(${i})">✕</button>`;
+    mergerFileList.appendChild(div);
+  });
+  
+  if (mergerFiles.length > 0) {
+    startMergerBtn.classList.remove('hidden');
+  } else {
+    startMergerBtn.classList.add('hidden');
+  }
+}
+
+window.removeMergerFile = (idx) => {
+  mergerFiles.splice(idx, 1);
+  renderMergerFileList();
+};
+
+async function processMergerFiles() {
+  try {
+    mergerUploadSection.classList.add('hidden');
+    heroSection.classList.add('hidden');
+    processingSection.classList.remove('hidden');
+    
+    updateProcessingUI(10, 'Decoding files...');
+    
+    const tracks = [];
+    for (let i = 0; i < mergerFiles.length; i++) {
+      updateProcessingUI(10 + (80 * (i / mergerFiles.length)), `Decoding ${mergerFiles[i].name}...`);
+      const decoded = await decodeAudioFile(mergerFiles[i]);
+      
+      // Need AudioBuffer to pass to mixer
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const buffer = createAudioBuffer(decoded.channelData, decoded.sampleRate);
+      
+      tracks.push({ buffer: buffer, volume: 1.0 });
+    }
+    
+    updateProcessingUI(95, 'Mixing files...');
+    
+    // Dynamically import merger logic
+    const { mixMultipleTracks } = await import('./audio-merger.js');
+    const mixedBlob = await mixMultipleTracks(tracks, 44100);
+    
+    downloadBlob(mixedBlob, 'mixed_audio.wav');
+    
+    processingSection.classList.add('hidden');
+    mergerUploadSection.classList.remove('hidden');
+    mergerFiles = [];
+    renderMergerFileList();
+    mergerFileInput.value = '';
+    
+  } catch (err) {
+    console.error('Merger failed:', err);
+    showError(`Merger failed: ${err.message}`);
+    resetToDashboard();
+  }
 }
 
 // ─── Upload Handling ────────────────────────────────────────────────────────
@@ -257,26 +397,45 @@ async function startProcessing() {
     decodedAudio = await decodeAudioFile(currentFile);
     updateProcessingUI(5, `Audio decoded: ${decodedAudio.duration.toFixed(1)}s, ${decodedAudio.sampleRate}Hz`);
 
-    // Step 2: Load model (if not already loaded)
-    if (!processor.isLoaded) {
-      modelOverlay.classList.remove('hidden');
-      await processor.loadModel((current, total, status) => {
-        const pct = Math.round((current / total) * 100);
-        modelProgressBar.style.width = `${pct}%`;
-        modelProgressText.textContent = `${pct}%`;
-        modelStatus.textContent = status;
-      });
-      modelOverlay.classList.add('hidden');
-    }
+    // Step 2: Stem Separation (Skip if Lyrics or Recorder mode)
+    if (currentMode === 'lyrics' || currentMode === 'recorder') {
+      updateProcessingUI(100, 'Ready!');
+      // Mock stems with original audio for playback
+      stems = {
+        vocals: [decodedAudio.channelData[0], decodedAudio.channelData[1] || decodedAudio.channelData[0]],
+        drums: null,
+        bass: null,
+        other: null
+      };
+    } else {
+      // Load model (if not already loaded)
+      if (!processor.isLoaded) {
+        modelOverlay.classList.remove('hidden');
+        await processor.loadModel((current, total, status) => {
+          const pct = Math.round((current / total) * 100);
+          modelProgressBar.style.width = `${pct}%`;
+          modelProgressText.textContent = `${pct}%`;
+          modelStatus.textContent = status;
+        });
+        modelOverlay.classList.add('hidden');
+      }
 
-    // Step 3: Separate stems
-    updateProcessingUI(10, 'Starting stem separation…');
-    stems = await processor.separate(decodedAudio, (percent, status) => {
-      updateProcessingUI(percent, status);
-    });
+      // Separate stems
+      updateProcessingUI(10, 'Starting stem separation…');
+      stems = await processor.separate(decodedAudio, (percent, status) => {
+        updateProcessingUI(percent, status);
+      });
+    }
 
     // Step 4: Show results
     showResults();
+
+    // Step 5: Auto-trigger specific mode UI
+    if (currentMode === 'lyrics') {
+      setTimeout(() => extractLyricsBtn.click(), 500);
+    } else if (currentMode === 'recorder') {
+      setTimeout(() => recordBtn.click(), 500);
+    }
 
   } catch (err) {
     console.error('[StemSplit] Processing error:', err);
@@ -313,6 +472,15 @@ function showResults() {
   // Render waveforms for each stem
   STEMS.forEach((stem) => {
     const canvas = $(`waveform-${stem}`);
+    const card = canvas ? canvas.closest('.stem-card') : null;
+    
+    if (!stems[stem]) {
+      if (card) card.classList.add('hidden');
+      return;
+    }
+    
+    if (card) card.classList.remove('hidden');
+
     if (!canvas) return;
 
     const renderer = new WaveformRenderer(canvas, STEM_COLORS[stem]);

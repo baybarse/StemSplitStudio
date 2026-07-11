@@ -14,6 +14,10 @@
 - 🧠 **Powered by HTDemucs (Meta AI)** — state-of-the-art music source separation model
 - 🔒 **100% Private** — no uploads, everything runs locally in your browser
 - 🎤 **Separates Vocals, Drums, Bass, and Other Instruments** into individual stems
+- 📝 **AI Lyrics Extraction** — Multilingual speech-to-text using Whisper AI (WebGPU-accelerated)
+- 🎙️ **Studio Recording** — Record your own vocals or instruments directly in the browser and add them to the mix
+- 🎛️ **Real-time Mixer & Scrubbing** — Adjust volume, solo, mute stems, and scrub through the interactive waveforms
+- 💾 **Advanced Export** — Download individual stems, selected tracks as ZIP, or mix them down into a single song
 - ⚡ **WebGPU Accelerated** — blazing fast processing with WASM fallback for broader compatibility
 - 📱 **Responsive Design** — works seamlessly on desktop and mobile
 - 💾 **Model Caching** — download the model once, use it forever (cached in your browser)
