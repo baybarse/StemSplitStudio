@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="StemSplit – Free, browser-based AI vocal and instrument separator. Isolate vocals, drums, bass, and other stems privately in your browser. No upload needed.">
+  <meta name="keywords" content="stem separator, vocal remover, instrument separator, AI music, source separation, karaoke, acapella">
+  <meta name="author" content="StemSplit">
+  <meta name="theme-color" content="#0a0a0f">
+  <meta property="og:title" content="StemSplit – AI-Powered Vocal & Instrument Separator">
+  <meta property="og:description" content="Separate vocals, drums, bass, and other instruments from any song directly in your browser. Free, private, and no upload required.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="StemSplit – AI-Powered Vocal & Instrument Separator">
+  <meta name="twitter:description" content="Separate vocals, drums, bass, and other instruments from any song directly in your browser.">
+  <title>StemSplit – AI-Powered Vocal & Instrument Separator</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <!-- Animated Background -->
+  <div class="bg-gradient" aria-hidden="true"></div>
+
+  <div id="app">
+    <!-- ===================== HERO SECTION ===================== -->
+    <section id="hero-section">
+      <div class="container hero-container">
+        <div class="hero-badge">✨ Powered by AI</div>
+        <h1 class="hero-title">
+          <span class="gradient-text">StemSplit</span>
+        </h1>
+        <p class="hero-subtitle">AI-Powered Vocal &amp; Instrument Separator</p>
+        <p class="hero-description">
+          Isolate vocals, drums, bass, and other instruments from any song.
+          Everything runs locally in your browser — fast, free, and completely private.
+        </p>
+        <div class="feature-badges">
+          <span class="feature-badge">
+            <span class="badge-icon">🌐</span> Browser-based
+          </span>
+          <span class="feature-badge">
+            <span class="badge-icon">🔒</span> No Upload Needed
+          </span>
+          <span class="feature-badge">
+            <span class="badge-icon">🎁</span> Free &amp; Private
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== UPLOAD SECTION ===================== -->
+    <section id="upload-section">
+      <div class="container">
+        <div id="upload-area" role="button" tabindex="0" aria-label="Upload audio file">
+          <div class="upload-icon" aria-hidden="true">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <h2 class="upload-title">Drop your audio file here</h2>
+          <p class="upload-text">or click to browse</p>
+          <p class="upload-formats">Supports MP3, WAV, FLAC, OGG, M4A • Max 20 MB</p>
+          <input type="file" id="file-input" accept="audio/*,.mp3,.wav,.flac,.ogg,.m4a" hidden>
+        </div>
+        <div id="file-info" class="file-info hidden">
+          <div class="file-info-inner">
+            <span class="file-icon">🎵</span>
+            <div class="file-details">
+              <p id="file-name" class="file-name">filename.mp3</p>
+              <p id="file-size" class="file-size">0 MB</p>
+            </div>
+            <button id="remove-file-btn" class="remove-file-btn" aria-label="Remove file">✕</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== MODEL LOADING OVERLAY ===================== -->
+    <div id="model-loading-overlay" class="hidden">
+      <div class="model-loading-content">
+        <div class="spinner" aria-hidden="true"></div>
+        <h3>Loading AI Model...</h3>
+        <p id="model-loading-status">Downloading model files...</p>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="model-progress-bar"></div>
+        </div>
+        <p id="model-progress-text">0%</p>
+      </div>
+    </div>
+
+    <!-- ===================== PROCESSING SECTION ===================== -->
+    <section id="processing-section" class="hidden">
+      <div class="container">
+        <div class="processing-content">
+          <div class="processing-animation">
+            <div class="wave-bars" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+          <h3 id="processing-title">Separating Stems...</h3>
+          <p id="processing-status">Analyzing audio...</p>
+          <div class="progress-bar-container">
+            <div class="progress-bar" id="separation-progress-bar"></div>
+          </div>
+          <p id="separation-progress-text">0%</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== RESULTS SECTION ===================== -->
+    <section id="results-section" class="hidden">
+      <div class="container">
+        <div class="results-header">
+          <h2 class="results-title">Your Stems Are Ready</h2>
+          <p class="results-subtitle">Listen, adjust, and download each separated stem</p>
+        </div>
+
+        <div class="stems-grid">
+          <!-- Vocals Stem Card -->
+          <div class="stem-card" data-stem="vocals" data-color="purple">
+            <div class="stem-header">
+              <span class="stem-icon">🎤</span>
+              <h3>Vocals</h3>
+            </div>
+            <canvas class="waveform-canvas" id="waveform-vocals" aria-label="Vocals waveform"></canvas>
+            <div class="stem-controls">
+              <button class="play-btn" id="play-vocals" data-stem="vocals" aria-label="Play vocals">▶</button>
+              <input type="range" class="volume-slider" id="volume-vocals" data-stem="vocals" min="0" max="100" value="100" aria-label="Vocals volume">
+              <button class="solo-btn" id="solo-vocals" data-stem="vocals" aria-label="Solo vocals">S</button>
+              <button class="mute-btn" id="mute-vocals" data-stem="vocals" aria-label="Mute vocals">M</button>
+              <button class="download-btn" id="download-vocals" data-stem="vocals" aria-label="Download vocals">⬇</button>
+            </div>
+          </div>
+
+          <!-- Drums Stem Card -->
+          <div class="stem-card" data-stem="drums" data-color="red">
+            <div class="stem-header">
+              <span class="stem-icon">🥁</span>
+              <h3>Drums</h3>
+            </div>
+            <canvas class="waveform-canvas" id="waveform-drums" aria-label="Drums waveform"></canvas>
+            <div class="stem-controls">
+              <button class="play-btn" id="play-drums" data-stem="drums" aria-label="Play drums">▶</button>
+              <input type="range" class="volume-slider" id="volume-drums" data-stem="drums" min="0" max="100" value="100" aria-label="Drums volume">
+              <button class="solo-btn" id="solo-drums" data-stem="drums" aria-label="Solo drums">S</button>
+              <button class="mute-btn" id="mute-drums" data-stem="drums" aria-label="Mute drums">M</button>
+              <button class="download-btn" id="download-drums" data-stem="drums" aria-label="Download drums">⬇</button>
+            </div>
+          </div>
+
+          <!-- Bass Stem Card -->
+          <div class="stem-card" data-stem="bass" data-color="blue">
+            <div class="stem-header">
+              <span class="stem-icon">🎸</span>
+              <h3>Bass</h3>
+            </div>
+            <canvas class="waveform-canvas" id="waveform-bass" aria-label="Bass waveform"></canvas>
+            <div class="stem-controls">
+              <button class="play-btn" id="play-bass" data-stem="bass" aria-label="Play bass">▶</button>
+              <input type="range" class="volume-slider" id="volume-bass" data-stem="bass" min="0" max="100" value="100" aria-label="Bass volume">
+              <button class="solo-btn" id="solo-bass" data-stem="bass" aria-label="Solo bass">S</button>
+              <button class="mute-btn" id="mute-bass" data-stem="bass" aria-label="Mute bass">M</button>
+              <button class="download-btn" id="download-bass" data-stem="bass" aria-label="Download bass">⬇</button>
+            </div>
+          </div>
+
+          <!-- Other Stem Card -->
+          <div class="stem-card" data-stem="other" data-color="green">
+            <div class="stem-header">
+              <span class="stem-icon">🎹</span>
+              <h3>Other</h3>
+            </div>
+            <canvas class="waveform-canvas" id="waveform-other" aria-label="Other instruments waveform"></canvas>
+            <div class="stem-controls">
+              <button class="play-btn" id="play-other" data-stem="other" aria-label="Play other">▶</button>
+              <input type="range" class="volume-slider" id="volume-other" data-stem="other" min="0" max="100" value="100" aria-label="Other volume">
+              <button class="solo-btn" id="solo-other" data-stem="other" aria-label="Solo other">S</button>
+              <button class="mute-btn" id="mute-other" data-stem="other" aria-label="Mute other">M</button>
+              <button class="download-btn" id="download-other" data-stem="other" aria-label="Download other">⬇</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="results-actions">
+          <button id="download-all-btn" class="btn btn-primary">
+            <span class="btn-icon">📦</span> Download All as ZIP
+          </button>
+          <button id="new-separation-btn" class="btn btn-secondary">
+            <span class="btn-icon">🔄</span> Separate Another File
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== FOOTER ===================== -->
+    <footer id="footer">
+      <div class="container footer-container">
+        <p class="footer-text">
+          Built with ❤️ using Web AI &bull; All processing happens locally in your browser
+        </p>
+        <p class="footer-credit">
+          StemSplit &copy; 2026 &bull; Powered by Open-Source AI Models
+        </p>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
