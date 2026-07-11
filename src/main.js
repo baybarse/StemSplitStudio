@@ -767,6 +767,16 @@ function setupResultsHandlers() {
           
           if (!playingState[stem]) startPlayback(stem);
         });
+        
+        // Also play selected tracks
+        const selectedTracks = recordedTracks.filter(track => track.isSelected);
+        selectedTracks.forEach(track => {
+          if (track.isPlaying && track.source) track.source.stop();
+          playTrack(track, syncTime);
+          const btn = document.querySelector(`.track-play-btn[data-id="${track.id}"]`);
+          if (btn) btn.textContent = '⏸';
+        });
+        
         playSelectedBtn.innerHTML = '<span class="btn-icon" style="font-size: 1.2rem;">⏸</span> Pause Selected';
       }
     });
@@ -1178,6 +1188,7 @@ function setupRecordingHandlers() {
   if (startRecordBtn) {
     startRecordBtn.addEventListener('click', async () => {
       try {
+        currentRecordingStartTime = getGlobalPlaybackTime();
         await recorder.start(recordingCanvas);
         startRecordBtn.disabled = true;
         stopRecordBtn.disabled = false;
@@ -1199,6 +1210,7 @@ function setupRecordingHandlers() {
         stopRecordingTimer();
         
         const result = await recorder.stop();
+        result.startTime = currentRecordingStartTime;
         addRecordedTrack(result);
         
       } catch (err) {
@@ -1234,6 +1246,7 @@ function addRecordedTrack(recordingData) {
     sampleRate: recordingData.sampleRate,
     blob: recordingData.blob,
     duration: recordingData.duration,
+    startTime: recordingData.startTime || 0,
     isPlaying: false,
     volume: 1.0,
     isMuted: false,
@@ -1288,11 +1301,14 @@ function renderRecordedTracks() {
     const playBtn = el.querySelector('.track-play-btn');
     playBtn.addEventListener('click', () => {
       if (track.isPlaying) {
-        // Stop logic would go here (simplified for now)
+        if (track.source) {
+          track.source.stop();
+          track.source.disconnect();
+        }
         track.isPlaying = false;
         playBtn.textContent = '▶';
       } else {
-        playTrack(track);
+        playTrack(track, null);
         playBtn.textContent = '⏸';
       }
     });
@@ -1301,7 +1317,7 @@ function renderRecordedTracks() {
   });
 }
 
-function playTrack(track) {
+function playTrack(track, globalSyncTime = null) {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   
   const buffer = createAudioBuffer(track.data, track.sampleRate);
@@ -1314,13 +1330,31 @@ function playTrack(track) {
   source.connect(gain);
   gain.connect(audioCtx.destination);
   
-  source.start(0);
+  let delay = 0;
+  let offset = 0;
+  
+  if (globalSyncTime !== null) {
+    if (globalSyncTime < track.startTime) {
+      delay = track.startTime - globalSyncTime;
+    } else {
+      offset = globalSyncTime - track.startTime;
+    }
+  }
+  
+  if (offset >= track.duration) return null;
+  
+  source.start(audioCtx.currentTime + delay, offset);
+  
+  track.source = source;
+  track.gain = gain;
   track.isPlaying = true;
   
   source.onended = () => {
     track.isPlaying = false;
     renderRecordedTracks();
   };
+  
+  return source;
 }
 
 // ─── Playback Controls ──────────────────────────────────────────────────────
@@ -1448,6 +1482,16 @@ function getCurrentTime(stem) {
   const elapsed = audioCtx.currentTime - startTime;
   return Math.max(0, Math.min(elapsed, buffer.duration));
 }
+
+function getGlobalPlaybackTime() {
+  const activeStem = STEMS.find(s => playingState[s]);
+  if (activeStem) return getCurrentTime(activeStem);
+  
+  const anyStem = STEMS.find(s => stems[s]);
+  return anyStem ? getCurrentTime(anyStem) : 0;
+}
+
+let currentRecordingStartTime = 0;
 
 function getTrimRegion() {
   const startInput = document.getElementById('trim-start');
@@ -1676,14 +1720,19 @@ async function downloadMix() {
   downloadMixBtn.disabled = true;
 
   try {
-    // Create a new offline context for mixing
-    // Use the duration of the original audio for the mix
+    // Determine mix length to accommodate long recordings
+    let mixDuration = decodedAudio.duration;
+    for (const track of selectedTracks) {
+      const trackEndTime = (track.startTime || 0) + track.duration;
+      if (trackEndTime > mixDuration) {
+        mixDuration = trackEndTime;
+      }
+    }
+    
     const sampleRate = decodedAudio.sampleRate;
-    const length = Math.floor(decodedAudio.duration * sampleRate);
+    const length = Math.floor(mixDuration * sampleRate);
     
-    // We mix manually by adding Float32Arrays to avoid OfflineAudioContext 
-    // rendering limits and resampler issues.
-    
+    // We mix manually by adding Float32Arrays
     const mixedL = new Float32Array(length);
     const mixedR = new Float32Array(length);
     
@@ -1703,21 +1752,21 @@ async function downloadMix() {
       }
     });
     
-    // Mix recorded tracks
+    // Mix recorded tracks with time alignment
     for (const track of selectedTracks) {
       const vol = track.isMuted ? 0 : track.volume;
       const l = track.data[0];
       const r = track.data[1] || track.data[0];
       
-      let trackL = l, trackR = r;
-      if (track.sampleRate !== sampleRate) {
-        // Simplified fallback
-      }
+      const startSampleOffset = Math.floor((track.startTime || 0) * sampleRate);
+      const trackLength = l.length;
       
-      const trackLength = Math.min(length, trackL.length);
       for (let i = 0; i < trackLength; i++) {
-        mixedL[i] += (trackL[i] || 0) * vol;
-        mixedR[i] += (trackR[i] || 0) * vol;
+        const outIdx = startSampleOffset + i;
+        if (outIdx >= 0 && outIdx < length) {
+          mixedL[outIdx] += (l[i] || 0) * vol;
+          mixedR[outIdx] += (r[i] || 0) * vol;
+        }
       }
     }
     
