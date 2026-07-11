@@ -47,6 +47,38 @@ export class WaveformRenderer {
 
     /** @type {number|null} requestAnimationFrame ID. */
     this.animationId = null;
+
+    /** @type {boolean} Internal dragging state for seeking. */
+    this.isDragging = false;
+
+    this.canvas.style.cursor = 'pointer';
+    this._setupEvents();
+  }
+
+  /**
+   * Set up mouse events for seeking.
+   * @private
+   */
+  _setupEvents() {
+    const handleMouse = (e) => {
+      const rect = this.canvas.getBoundingClientRect();
+      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      const percentage = x / rect.width;
+      this.canvas.dispatchEvent(new CustomEvent('seek', { detail: percentage }));
+    };
+
+    this.canvas.addEventListener('mousedown', (e) => {
+      this.isDragging = true;
+      handleMouse(e);
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (this.isDragging) handleMouse(e);
+    });
+
+    window.addEventListener('mouseup', () => {
+      this.isDragging = false;
+    });
   }
 
   /**

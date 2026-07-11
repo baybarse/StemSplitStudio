@@ -322,6 +322,15 @@ function showResults() {
     if (stems[stem] && stems[stem][0]) {
       renderer.render(stems[stem][0]);
     }
+
+    // Listen for scrub/seek events
+    canvas.addEventListener('seek', (e) => {
+      const percentage = e.detail;
+      if (decodedAudio) {
+        const newTime = percentage * decodedAudio.duration;
+        handleSeek(stem, newTime);
+      }
+    });
   });
 
   // Add animation class for entrance
@@ -687,6 +696,27 @@ function togglePlay(stem) {
   } else {
     startPlayback(stem);
   }
+}
+
+function handleSeek(targetStem, newTime) {
+  const stemsToSeek = isSyncPlaying ? STEMS : [targetStem];
+  
+  stemsToSeek.forEach(stem => {
+    if (!audioSources[stem]) {
+      audioSources[stem] = { startOffset: 0 };
+    }
+    
+    if (playingState[stem]) {
+      stopPlayback(stem);
+      audioSources[stem].startOffset = newTime;
+      startPlayback(stem);
+    } else {
+      audioSources[stem].startOffset = newTime;
+      if (waveformRenderers[stem] && decodedAudio) {
+        waveformRenderers[stem].setPlaybackPosition(newTime / decodedAudio.duration);
+      }
+    }
+  });
 }
 
 function startPlayback(stem) {
