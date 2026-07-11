@@ -47,6 +47,19 @@
   <div class="bg-gradient" aria-hidden="true"></div>
 
   <div id="app">
+    <div style="position: absolute; top: 1.5rem; left: 1.5rem; z-index: 1000; display: flex; flex-direction: column; gap: 0.75rem; align-items: flex-start;">
+      <a href="https://github.com/baybarse/StemSplitStudio" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; color: var(--color-text-primary); text-decoration: none; font-size: 1.1rem; font-weight: 500; background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 2rem; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
+        <svg height="24" aria-hidden="true" viewBox="0 0 16 16" version="1.1" width="24" data-view-component="true" fill="currentColor">
+            <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
+        </svg>
+        GitHub Repo
+      </a>
+      <a href="https://www.linkedin.com/in/baybarshan-ekiz/" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; color: #0a66c2; text-decoration: none; font-size: 0.95rem; font-weight: 500; background: rgba(255,255,255,0.05); padding: 0.4rem 1rem; border-radius: 2rem; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+        Baybarshan Ekiz LinkedIn
+      </a>
+    </div>
+
     <!-- ===================== HERO SECTION ===================== -->
     <section id="hero-section">
       <div class="container hero-container">
@@ -541,6 +554,24 @@
               <h3 style="margin-bottom: 1rem; color: var(--color-primary); font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;"><span>✂️</span> Editing & Trimming</h3>
               <p style="color: var(--color-text-secondary); line-height: 1.7; font-size: 0.95rem;">
                 Use the <strong>Export Region</strong> inputs to define a start and end boundary. You can then use the <strong>Isolate</strong> button to silence everything outside the region, or the <strong>Mute</strong> button to silence only the region itself. Use <strong>Undo</strong> if you make a mistake.
+              </p>
+            </div>
+            <div>
+              <h3 style="margin-bottom: 1rem; color: var(--color-primary); font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;"><span>🔗</span> Track Merger</h3>
+              <p style="color: var(--color-text-secondary); line-height: 1.7; font-size: 0.95rem;">
+                Click <strong>"Open Audio Merger"</strong> to combine multiple files into a single track sequentially. Drag and drop files, drag to reorder them in the list, and hit <strong>Merge Tracks</strong>. This happens instantly in the browser without any re-encoding latency.
+              </p>
+            </div>
+            <div>
+              <h3 style="margin-bottom: 1rem; color: var(--color-primary); font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;"><span>📝</span> AI Lyrics Extraction</h3>
+              <p style="color: var(--color-text-secondary); line-height: 1.7; font-size: 0.95rem;">
+                Powered by <strong>Whisper AI</strong>. Click <strong>"Extract Lyrics"</strong> and choose your target language. The system will transcribe the vocals locally using WebGPU and provide a timestamped lyrics file (.txt) alongside on-screen playback tracking.
+              </p>
+            </div>
+            <div>
+              <h3 style="margin-bottom: 1rem; color: var(--color-primary); font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;"><span>💾</span> Local Caching System</h3>
+              <p style="color: var(--color-text-secondary); line-height: 1.7; font-size: 0.95rem;">
+                StemSplit utilizes an advanced IndexedDB caching layer. The ~1.5GB Demucs and Whisper AI models are only downloaded once. Subsequent visits to the app will instantly load the models from your hard drive, allowing 100% offline usage.
               </p>
             </div>
           </div>
