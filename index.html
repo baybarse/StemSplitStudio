@@ -130,6 +130,9 @@
             </div>
             <canvas class="waveform-canvas" id="waveform-vocals" aria-label="Vocals waveform"></canvas>
             <div class="stem-controls">
+              <label class="stem-checkbox">
+                <input type="checkbox" class="stem-select" data-stem="vocals" checked>
+              </label>
               <button class="play-btn" id="play-vocals" data-stem="vocals" aria-label="Play vocals">▶</button>
               <input type="range" class="volume-slider" id="volume-vocals" data-stem="vocals" min="0" max="100" value="100" aria-label="Vocals volume">
               <button class="solo-btn" id="solo-vocals" data-stem="vocals" aria-label="Solo vocals">S</button>
@@ -146,6 +149,9 @@
             </div>
             <canvas class="waveform-canvas" id="waveform-drums" aria-label="Drums waveform"></canvas>
             <div class="stem-controls">
+              <label class="stem-checkbox">
+                <input type="checkbox" class="stem-select" data-stem="drums" checked>
+              </label>
               <button class="play-btn" id="play-drums" data-stem="drums" aria-label="Play drums">▶</button>
               <input type="range" class="volume-slider" id="volume-drums" data-stem="drums" min="0" max="100" value="100" aria-label="Drums volume">
               <button class="solo-btn" id="solo-drums" data-stem="drums" aria-label="Solo drums">S</button>
@@ -162,6 +168,9 @@
             </div>
             <canvas class="waveform-canvas" id="waveform-bass" aria-label="Bass waveform"></canvas>
             <div class="stem-controls">
+              <label class="stem-checkbox">
+                <input type="checkbox" class="stem-select" data-stem="bass" checked>
+              </label>
               <button class="play-btn" id="play-bass" data-stem="bass" aria-label="Play bass">▶</button>
               <input type="range" class="volume-slider" id="volume-bass" data-stem="bass" min="0" max="100" value="100" aria-label="Bass volume">
               <button class="solo-btn" id="solo-bass" data-stem="bass" aria-label="Solo bass">S</button>
@@ -178,6 +187,9 @@
             </div>
             <canvas class="waveform-canvas" id="waveform-other" aria-label="Other instruments waveform"></canvas>
             <div class="stem-controls">
+              <label class="stem-checkbox">
+                <input type="checkbox" class="stem-select" data-stem="other" checked>
+              </label>
               <button class="play-btn" id="play-other" data-stem="other" aria-label="Play other">▶</button>
               <input type="range" class="volume-slider" id="volume-other" data-stem="other" min="0" max="100" value="100" aria-label="Other volume">
               <button class="solo-btn" id="solo-other" data-stem="other" aria-label="Solo other">S</button>
@@ -188,12 +200,86 @@
         </div>
 
         <div class="results-actions">
-          <button id="download-all-btn" class="btn btn-primary">
-            <span class="btn-icon">📦</span> Download All as ZIP
-          </button>
-          <button id="new-separation-btn" class="btn btn-secondary">
-            <span class="btn-icon">🔄</span> Separate Another File
-          </button>
+          <div class="download-options">
+            <button id="download-selected-btn" class="btn btn-primary">
+              <span class="btn-icon">⬇</span> Download Selected
+            </button>
+            <button id="download-mix-btn" class="btn btn-primary">
+              <span class="btn-icon">🎵</span> Download as One Song
+            </button>
+            <button id="download-all-btn" class="btn btn-secondary">
+              <span class="btn-icon">📦</span> Download All as ZIP
+            </button>
+          </div>
+          <div class="secondary-actions">
+            <button id="extract-lyrics-btn" class="btn btn-accent">
+              <span class="btn-icon">📝</span> Extract Lyrics
+            </button>
+            <button id="record-btn" class="btn btn-accent">
+              <span class="btn-icon">🎙️</span> Record & Add Track
+            </button>
+            <button id="new-separation-btn" class="btn btn-ghost">
+              <span class="btn-icon">🔄</span> Separate Another File
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== LYRICS SECTION ===================== -->
+    <section id="lyrics-section" class="hidden">
+      <div class="container">
+        <div class="lyrics-panel">
+          <div class="lyrics-header">
+            <h2 class="lyrics-title">📝 Extracted Lyrics</h2>
+            <div class="lyrics-actions">
+              <button id="copy-lyrics-btn" class="btn btn-sm">📋 Copy</button>
+              <button id="download-lyrics-btn" class="btn btn-sm">⬇ Download .txt</button>
+              <button id="close-lyrics-btn" class="btn btn-sm btn-ghost">✕</button>
+            </div>
+          </div>
+          <div id="lyrics-loading" class="lyrics-loading hidden">
+            <div class="spinner"></div>
+            <p id="lyrics-loading-status">Loading Whisper AI model...</p>
+            <div class="progress-bar-container">
+              <div class="progress-bar" id="lyrics-progress-bar"></div>
+            </div>
+            <p id="lyrics-progress-text">0%</p>
+          </div>
+          <div id="lyrics-content" class="lyrics-content">
+            <p class="lyrics-placeholder">Lyrics will appear here...</p>
+          </div>
+          <div id="lyrics-language" class="lyrics-language hidden">
+            <span class="language-badge">Detected language: <strong id="detected-language">--</strong></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== RECORDING SECTION ===================== -->
+    <section id="recording-section" class="hidden">
+      <div class="container">
+        <div class="recording-panel">
+          <div class="recording-header">
+            <h2 class="recording-title">🎙️ Recording Studio</h2>
+            <button id="close-recording-btn" class="btn btn-sm btn-ghost">✕</button>
+          </div>
+          <div class="recording-controls">
+            <div class="recording-visualizer">
+              <canvas id="recording-canvas" class="recording-canvas"></canvas>
+            </div>
+            <div class="recording-buttons">
+              <button id="start-record-btn" class="record-action-btn">
+                <span class="record-dot"></span> Start Recording
+              </button>
+              <button id="stop-record-btn" class="record-action-btn stop" disabled>
+                ⏹ Stop
+              </button>
+            </div>
+            <p id="recording-time" class="recording-time">00:00</p>
+            <p class="recording-hint">Your recording will be added as a new track that you can mix with the stems</p>
+          </div>
+          <div id="recorded-tracks" class="recorded-tracks"></div>
         </div>
       </div>
     </section>

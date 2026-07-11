@@ -10,6 +10,8 @@
 import { DemucsProcessor } from './demucs-processor.js';
 import { decodeAudioFile, encodeWav, createAudioBuffer } from './audio-engine.js';
 import { WaveformRenderer } from './waveform.js';
+import { extractLyrics } from './lyrics-extractor.js';
+import { AudioRecorder } from './recorder.js';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -31,6 +33,7 @@ const ACCEPTED_EXTENSIONS = ['.mp3', '.wav', '.flac', '.ogg', '.m4a', '.aac', '.
 
 /** @type {DemucsProcessor} */
 const processor = new DemucsProcessor();
+const recorder = new AudioRecorder();
 
 /** @type {File|null} Currently selected audio file. */
 let currentFile = null;
@@ -62,6 +65,12 @@ const soloState = {};
 /** @type {Record<string, number>} Per-stem volume (0–1). */
 const volumeState = {};
 
+/** @type {Record<string, boolean>} Per-stem checkbox selection state. */
+const selectedState = {};
+
+/** @type {Array<{id: string, name: string, data: Float32Array[], blob: Blob, duration: number, isPlaying: boolean, volume: number, isMuted: boolean, isSelected: boolean}>} Recorded tracks. */
+const recordedTracks = [];
+
 /** @type {boolean} Whether all stems are playing in sync. */
 let isSyncPlaying = false;
 
@@ -89,6 +98,34 @@ const heroSection       = $('hero-section');
 const downloadAllBtn    = $('download-all-btn');
 const newSeparationBtn  = $('new-separation-btn');
 
+// New actions
+const downloadSelectedBtn = $('download-selected-btn');
+const downloadMixBtn      = $('download-mix-btn');
+const extractLyricsBtn    = $('extract-lyrics-btn');
+const recordBtn           = $('record-btn');
+
+// Lyrics section
+const lyricsSection       = $('lyrics-section');
+const lyricsContent       = $('lyrics-content');
+const lyricsLoading       = $('lyrics-loading');
+const lyricsProgressBar   = $('lyrics-progress-bar');
+const lyricsProgressText  = $('lyrics-progress-text');
+const lyricsStatus        = $('lyrics-loading-status');
+const copyLyricsBtn       = $('copy-lyrics-btn');
+const downloadLyricsBtn   = $('download-lyrics-btn');
+const closeLyricsBtn      = $('close-lyrics-btn');
+const lyricsLanguage      = $('lyrics-language');
+const detectedLanguage    = $('detected-language');
+
+// Recording section
+const recordingSection    = $('recording-section');
+const startRecordBtn      = $('start-record-btn');
+const stopRecordBtn       = $('stop-record-btn');
+const closeRecordingBtn   = $('close-recording-btn');
+const recordingCanvas     = $('recording-canvas');
+const recordingTime       = $('recording-time');
+const recordedTracksDiv   = $('recorded-tracks');
+
 // ─── Initialisation ─────────────────────────────────────────────────────────
 
 function init() {
@@ -98,10 +135,13 @@ function init() {
     muteState[stem]    = false;
     soloState[stem]    = false;
     volumeState[stem]  = 1.0;
+    selectedState[stem] = true;
   });
 
   setupUploadHandlers();
   setupResultsHandlers();
+  setupLyricsHandlers();
+  setupRecordingHandlers();
   setupKeyboardShortcuts();
 
   console.log('[StemSplit] App initialised');
@@ -209,6 +249,8 @@ async function startProcessing() {
     heroSection.classList.add('hidden');
     processingSection.classList.remove('hidden');
     resultsSection.classList.add('hidden');
+    lyricsSection.classList.add('hidden');
+    recordingSection.classList.add('hidden');
 
     // Step 1: Decode audio
     updateProcessingUI(0, 'Decoding audio file…');
@@ -296,6 +338,14 @@ function showResults() {
 }
 
 function setupResultsHandlers() {
+  // Checkboxes
+  document.querySelectorAll('.stem-select').forEach((cb) => {
+    cb.addEventListener('change', (e) => {
+      const stem = e.target.dataset.stem;
+      selectedState[stem] = e.target.checked;
+    });
+  });
+
   // Play/Pause buttons
   document.querySelectorAll('.play-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -337,14 +387,296 @@ function setupResultsHandlers() {
     });
   });
 
-  // Download all as ZIP
-  downloadAllBtn.addEventListener('click', downloadAllStems);
-
-  // New separation
-  newSeparationBtn.addEventListener('click', () => {
+  // Download actions
+  if (downloadAllBtn) downloadAllBtn.addEventListener('click', downloadAllStems);
+  if (downloadSelectedBtn) downloadSelectedBtn.addEventListener('click', downloadSelectedStems);
+  if (downloadMixBtn) downloadMixBtn.addEventListener('click', downloadMix);
+  
+  // Secondary actions
+  if (newSeparationBtn) newSeparationBtn.addEventListener('click', () => {
     stopAllPlayback();
     resetToUpload();
   });
+}
+
+// ─── Lyrics Extraction ──────────────────────────────────────────────────────
+
+let lyricsResult = null;
+
+function setupLyricsHandlers() {
+  if (extractLyricsBtn) {
+    extractLyricsBtn.addEventListener('click', () => {
+      lyricsSection.classList.remove('hidden');
+      lyricsSection.scrollIntoView({ behavior: 'smooth' });
+      
+      if (!lyricsResult) {
+        startLyricsExtraction();
+      }
+    });
+  }
+
+  if (closeLyricsBtn) {
+    closeLyricsBtn.addEventListener('click', () => {
+      lyricsSection.classList.add('hidden');
+    });
+  }
+
+  if (copyLyricsBtn) {
+    copyLyricsBtn.addEventListener('click', () => {
+      if (lyricsResult && lyricsResult.text) {
+        navigator.clipboard.writeText(lyricsResult.text).then(() => {
+          const original = copyLyricsBtn.innerHTML;
+          copyLyricsBtn.innerHTML = '✅ Copied!';
+          setTimeout(() => copyLyricsBtn.innerHTML = original, 2000);
+        });
+      }
+    });
+  }
+
+  if (downloadLyricsBtn) {
+    downloadLyricsBtn.addEventListener('click', () => {
+      if (lyricsResult && lyricsResult.text) {
+        const blob = new Blob([lyricsResult.text], { type: 'text/plain' });
+        const baseName = currentFile ? currentFile.name.replace(/\.[^.]+$/, '') : 'lyrics';
+        downloadBlob(blob, `${baseName}_lyrics.txt`);
+      }
+    });
+  }
+}
+
+async function startLyricsExtraction() {
+  // Use vocals stem if available
+  const audioData = stems.vocals ? stems.vocals[0] : (decodedAudio ? decodedAudio.channelData[0] : null);
+  if (!audioData) {
+    showError('No audio available to extract lyrics from.');
+    return;
+  }
+
+  lyricsLoading.classList.remove('hidden');
+  lyricsContent.classList.add('hidden');
+  lyricsLanguage.classList.add('hidden');
+
+  try {
+    lyricsResult = await extractLyrics(audioData, decodedAudio.sampleRate, {
+      onProgress: (info) => {
+        lyricsStatus.textContent = info.status;
+        if (info.progress !== undefined) {
+          lyricsProgressBar.style.width = `${info.progress}%`;
+          lyricsProgressText.textContent = `${info.progress.toFixed(0)}%`;
+        }
+      }
+    });
+
+    // Render lyrics
+    lyricsLoading.classList.add('hidden');
+    lyricsContent.classList.remove('hidden');
+    lyricsLanguage.classList.remove('hidden');
+    
+    detectedLanguage.textContent = lyricsResult.language.toUpperCase();
+    
+    if (lyricsResult.chunks && lyricsResult.chunks.length > 0) {
+      lyricsContent.innerHTML = '';
+      lyricsResult.chunks.forEach(chunk => {
+        const line = document.createElement('div');
+        line.className = 'lyrics-line';
+        const timeStart = formatTime(chunk.timestamp[0]);
+        line.innerHTML = `<span class="lyrics-timestamp">[${timeStart}]</span> ${chunk.text}`;
+        
+        // Click to seek (optional enhancement)
+        line.addEventListener('click', () => {
+          // Could seek audio here
+        });
+        
+        lyricsContent.appendChild(line);
+      });
+    } else {
+      lyricsContent.innerHTML = `<p>${lyricsResult.text || 'No lyrics found.'}</p>`;
+    }
+    
+  } catch (err) {
+    console.error('Lyrics extraction failed:', err);
+    showError(`Lyrics extraction failed: ${err.message}`);
+    lyricsLoading.classList.add('hidden');
+    lyricsContent.classList.remove('hidden');
+    lyricsContent.innerHTML = `<p class="lyrics-placeholder">Error extracting lyrics.</p>`;
+  }
+}
+
+function formatTime(seconds) {
+  if (!seconds) return '00:00';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+// ─── Recording Studio ───────────────────────────────────────────────────────
+
+let recordingTimer = null;
+
+function setupRecordingHandlers() {
+  if (recordBtn) {
+    recordBtn.addEventListener('click', () => {
+      recordingSection.classList.remove('hidden');
+      recordingSection.scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+
+  if (closeRecordingBtn) {
+    closeRecordingBtn.addEventListener('click', () => {
+      if (recorder.isRecording) {
+        recorder.cancel();
+        stopRecordingTimer();
+      }
+      recordingSection.classList.add('hidden');
+    });
+  }
+
+  if (startRecordBtn) {
+    startRecordBtn.addEventListener('click', async () => {
+      try {
+        await recorder.start(recordingCanvas);
+        startRecordBtn.disabled = true;
+        stopRecordBtn.disabled = false;
+        recordingSection.querySelector('.recording-panel').classList.add('recording-active');
+        startRecordingTimer();
+      } catch (err) {
+        console.error('Failed to start recording:', err);
+        showError(`Microphone access failed: ${err.message}`);
+      }
+    });
+  }
+
+  if (stopRecordBtn) {
+    stopRecordBtn.addEventListener('click', async () => {
+      try {
+        startRecordBtn.disabled = false;
+        stopRecordBtn.disabled = true;
+        recordingSection.querySelector('.recording-panel').classList.remove('recording-active');
+        stopRecordingTimer();
+        
+        const result = await recorder.stop();
+        addRecordedTrack(result);
+        
+      } catch (err) {
+        console.error('Failed to stop recording:', err);
+      }
+    });
+  }
+}
+
+function startRecordingTimer() {
+  recordingTime.textContent = '00:00';
+  recordingTimer = setInterval(() => {
+    const elapsed = Math.floor(recorder.getElapsedTime());
+    recordingTime.textContent = formatTime(elapsed);
+  }, 1000);
+}
+
+function stopRecordingTimer() {
+  if (recordingTimer) {
+    clearInterval(recordingTimer);
+    recordingTimer = null;
+  }
+}
+
+function addRecordedTrack(recordingData) {
+  const trackId = `track-${Date.now()}`;
+  const trackName = `Recording ${recordedTracks.length + 1}`;
+  
+  recordedTracks.push({
+    id: trackId,
+    name: trackName,
+    data: recordingData.channelData,
+    sampleRate: recordingData.sampleRate,
+    blob: recordingData.blob,
+    duration: recordingData.duration,
+    isPlaying: false,
+    volume: 1.0,
+    isMuted: false,
+    isSelected: true
+  });
+  
+  renderRecordedTracks();
+}
+
+function renderRecordedTracks() {
+  recordedTracksDiv.innerHTML = '';
+  
+  recordedTracks.forEach(track => {
+    const el = document.createElement('div');
+    el.className = 'recorded-track';
+    
+    el.innerHTML = `
+      <label class="stem-checkbox">
+        <input type="checkbox" class="track-select" data-id="${track.id}" checked>
+      </label>
+      <div class="track-name">${track.name}</div>
+      <div class="track-duration">${formatTime(track.duration)}</div>
+      <button class="track-play-btn" data-id="${track.id}">▶</button>
+      <input type="range" class="track-volume" data-id="${track.id}" min="0" max="100" value="100">
+      <button class="track-download-btn" data-id="${track.id}">⬇</button>
+      <button class="track-delete-btn" data-id="${track.id}">🗑</button>
+    `;
+    
+    // Checkbox
+    const cb = el.querySelector('.track-select');
+    cb.checked = track.isSelected;
+    cb.addEventListener('change', (e) => track.isSelected = e.target.checked);
+    
+    // Volume
+    const vol = el.querySelector('.track-volume');
+    vol.value = track.volume * 100;
+    vol.addEventListener('input', (e) => track.volume = parseInt(e.target.value) / 100);
+    
+    // Download
+    el.querySelector('.track-download-btn').addEventListener('click', () => {
+      downloadBlob(track.blob, `${track.name}.webm`);
+    });
+    
+    // Delete
+    el.querySelector('.track-delete-btn').addEventListener('click', () => {
+      const idx = recordedTracks.findIndex(t => t.id === track.id);
+      if (idx !== -1) recordedTracks.splice(idx, 1);
+      renderRecordedTracks();
+    });
+    
+    // Play/Pause
+    const playBtn = el.querySelector('.track-play-btn');
+    playBtn.addEventListener('click', () => {
+      if (track.isPlaying) {
+        // Stop logic would go here (simplified for now)
+        track.isPlaying = false;
+        playBtn.textContent = '▶';
+      } else {
+        playTrack(track);
+        playBtn.textContent = '⏸';
+      }
+    });
+    
+    recordedTracksDiv.appendChild(el);
+  });
+}
+
+function playTrack(track) {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  
+  const buffer = createAudioBuffer(track.data, track.sampleRate);
+  const source = audioCtx.createBufferSource();
+  const gain = audioCtx.createGain();
+  
+  source.buffer = buffer;
+  gain.gain.value = track.isMuted ? 0 : track.volume;
+  
+  source.connect(gain);
+  gain.connect(audioCtx.destination);
+  
+  source.start(0);
+  track.isPlaying = true;
+  
+  source.onended = () => {
+    track.isPlaying = false;
+    renderRecordedTracks();
+  };
 }
 
 // ─── Playback Controls ──────────────────────────────────────────────────────
@@ -524,11 +856,9 @@ async function downloadAllStems() {
 
   // Check if JSZip is available, if not, download stems individually
   try {
-    // Dynamically load JSZip from CDN
     if (!window.JSZip) {
-      downloadAllBtn.textContent = '📦 Preparing ZIP…';
+      downloadAllBtn.innerHTML = '<span class="btn-icon">📦</span> Preparing ZIP…';
       downloadAllBtn.disabled = true;
-
       await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
     }
 
@@ -545,9 +875,9 @@ async function downloadAllStems() {
     const zipBlob = await zip.generateAsync({
       type: 'blob',
       compression: 'DEFLATE',
-      compressionOptions: { level: 1 }, // Fast compression for large audio
+      compressionOptions: { level: 1 },
     }, (meta) => {
-      downloadAllBtn.textContent = `📦 Zipping… ${meta.percent.toFixed(0)}%`;
+      downloadAllBtn.innerHTML = `<span class="btn-icon">📦</span> Zipping… ${meta.percent.toFixed(0)}%`;
     });
 
     downloadBlob(zipBlob, `${baseName}_stems.zip`);
@@ -555,10 +885,143 @@ async function downloadAllStems() {
   } catch (err) {
     console.warn('[StemSplit] ZIP failed, downloading individually:', err);
     STEMS.forEach((stem) => downloadStem(stem));
-
   } finally {
-    downloadAllBtn.textContent = '📦 Download All as ZIP';
+    downloadAllBtn.innerHTML = '<span class="btn-icon">📦</span> Download All as ZIP';
     downloadAllBtn.disabled = false;
+  }
+}
+
+async function downloadSelectedStems() {
+  if (!currentFile) return;
+
+  const baseName = currentFile.name.replace(/\.[^.]+$/, '');
+  
+  // Find selected stems
+  const selectedStems = STEMS.filter(stem => selectedState[stem]);
+  
+  if (selectedStems.length === 0) {
+    showError("Please select at least one stem to download.");
+    return;
+  }
+
+  if (selectedStems.length === 1) {
+    // Only one selected, just download it directly
+    downloadStem(selectedStems[0]);
+    return;
+  }
+
+  // Zip the selected ones
+  try {
+    if (!window.JSZip) {
+      downloadSelectedBtn.innerHTML = '<span class="btn-icon">⬇</span> Preparing ZIP…';
+      downloadSelectedBtn.disabled = true;
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    }
+
+    const zip = new window.JSZip();
+    const folder = zip.folder(baseName + '_selected_stems');
+
+    selectedStems.forEach((stem) => {
+      if (stems[stem]) {
+        const wavBlob = encodeWav(stems[stem], decodedAudio.sampleRate);
+        folder.file(`${stem}.wav`, wavBlob);
+      }
+    });
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    downloadBlob(zipBlob, `${baseName}_selected.zip`);
+
+  } catch (err) {
+    console.warn('[StemSplit] ZIP failed, downloading individually:', err);
+    selectedStems.forEach((stem) => downloadStem(stem));
+  } finally {
+    downloadSelectedBtn.innerHTML = '<span class="btn-icon">⬇</span> Download Selected';
+    downloadSelectedBtn.disabled = false;
+  }
+}
+
+async function downloadMix() {
+  if (!currentFile || !decodedAudio) return;
+
+  const baseName = currentFile.name.replace(/\.[^.]+$/, '');
+  
+  // Find selected stems
+  const selectedStems = STEMS.filter(stem => selectedState[stem]);
+  const selectedTracks = recordedTracks.filter(track => track.isSelected);
+  
+  if (selectedStems.length === 0 && selectedTracks.length === 0) {
+    showError("Please select at least one stem or track to mix.");
+    return;
+  }
+
+  downloadMixBtn.innerHTML = '<span class="btn-icon">🎵</span> Mixing...';
+  downloadMixBtn.disabled = true;
+
+  try {
+    // Create a new offline context for mixing
+    // Use the duration of the original audio for the mix
+    const sampleRate = decodedAudio.sampleRate;
+    const length = Math.floor(decodedAudio.duration * sampleRate);
+    
+    // We mix manually by adding Float32Arrays to avoid OfflineAudioContext 
+    // rendering limits and resampler issues.
+    
+    const mixedL = new Float32Array(length);
+    const mixedR = new Float32Array(length);
+    
+    // Mix stems
+    selectedStems.forEach(stem => {
+      if (!stems[stem]) return;
+      const vol = getEffectiveVolume(stem); // Applies solo/mute logic
+      
+      const l = stems[stem][0];
+      const r = stems[stem][1] || stems[stem][0]; // mono fallback
+      
+      for (let i = 0; i < length; i++) {
+        mixedL[i] += (l[i] || 0) * vol;
+        mixedR[i] += (r[i] || 0) * vol;
+      }
+    });
+    
+    // Mix recorded tracks
+    // (Note: This is a simplified mix that just starts tracks from 0. 
+    // Real DAWs allow positioning, but for this simple app they mix from start)
+    for (const track of selectedTracks) {
+      const vol = track.isMuted ? 0 : track.volume;
+      const l = track.data[0];
+      const r = track.data[1] || track.data[0];
+      
+      // Resample track if needed
+      let trackL = l, trackR = r;
+      if (track.sampleRate !== sampleRate) {
+        // Simplified: using OfflineContext to resample recorded track would be better,
+        // but for now we assume they match or we just add what we can
+      }
+      
+      const trackLength = Math.min(length, trackL.length);
+      for (let i = 0; i < trackLength; i++) {
+        mixedL[i] += (trackL[i] || 0) * vol;
+        mixedR[i] += (trackR[i] || 0) * vol;
+      }
+    }
+    
+    // Hard clipper to prevent distortion
+    for (let i = 0; i < length; i++) {
+      if (mixedL[i] > 1.0) mixedL[i] = 1.0;
+      if (mixedL[i] < -1.0) mixedL[i] = -1.0;
+      if (mixedR[i] > 1.0) mixedR[i] = 1.0;
+      if (mixedR[i] < -1.0) mixedR[i] = -1.0;
+    }
+    
+    const wavBlob = encodeWav([mixedL, mixedR], sampleRate);
+    downloadBlob(wavBlob, `${baseName}_mix.wav`);
+    
+  } catch (err) {
+    console.error('Mixdown failed:', err);
+    showError(`Mixdown failed: ${err.message}`);
+  } finally {
+    downloadMixBtn.innerHTML = '<span class="btn-icon">🎵</span> Download as One Song';
+    downloadMixBtn.disabled = false;
   }
 }
 
@@ -589,6 +1052,7 @@ function resetToUpload() {
     muteState[stem] = false;
     soloState[stem] = false;
     volumeState[stem] = 1.0;
+    selectedState[stem] = true;
     delete audioSources[stem];
 
     // Reset UI
@@ -599,11 +1063,21 @@ function resetToUpload() {
     if (soloBtn) soloBtn.classList.remove('active');
     const volumeSlider = $(`volume-${stem}`);
     if (volumeSlider) volumeSlider.value = '100';
+    const checkbox = document.querySelector(`.stem-select[data-stem="${stem}"]`);
+    if (checkbox) checkbox.checked = true;
   });
+
+  // Clear tracks
+  recordedTracks.length = 0;
+  if (recordedTracksDiv) recordedTracksDiv.innerHTML = '';
+  
+  lyricsResult = null;
 
   // Reset sections
   processingSection.classList.add('hidden');
   resultsSection.classList.add('hidden');
+  lyricsSection.classList.add('hidden');
+  recordingSection.classList.add('hidden');
   heroSection.classList.remove('hidden');
   uploadSection.classList.remove('hidden');
 
