@@ -1622,3 +1622,22 @@ function loadScript(url) {
 // ─── Start ──────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', init);
+
+// ─── UI Updates ─────────────────────────────────────────────────────────────
+
+function updateTimeDisplays() {
+  if (decodedAudio) {
+    const totalDuration = formatTime(decodedAudio.duration);
+    STEMS.forEach(stem => {
+      const timeDisplay = document.getElementById(`time-${stem}`);
+      if (timeDisplay) {
+        const time = getCurrentTime(stem);
+        timeDisplay.textContent = `${formatTime(time)} / ${totalDuration}`;
+      }
+    });
+  }
+  requestAnimationFrame(updateTimeDisplays);
+}
+
+// Start UI update loop
+requestAnimationFrame(updateTimeDisplays);
