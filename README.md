@@ -1,129 +1,62 @@
-# 🎵 StemSplit — AI Music Separator
+# StemSplit Studio 🎵✨
 
-[![Deploy to GitHub Pages](https://github.com/baybarse/seperatorvoiceinstrument/actions/workflows/deploy.yml/badge.svg)](https://github.com/baybarse/seperatorvoiceinstrument/actions/workflows/deploy.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+StemSplit Studio is a **free, powerful, and private in-browser audio suite**. It leverages cutting-edge WebGPU AI technologies to perform advanced music manipulation entirely locally on your device—no servers, no uploads, and no waiting in queues.
 
-> **AI-powered vocal and instrument separator running entirely in your browser.** No uploads, no servers — your audio never leaves your device.
+## 🌟 Core Features
 
-![StemSplit Screenshot](./screenshot.png)
+- **✂️ Stem Splitter**: Isolate vocals, drums, bass, and other instruments from any song with studio-quality precision using Meta's HTDemucs AI model.
+- **📝 Lyrics Extractor**: Get accurate, time-synced lyrics from any song in seconds. Powered by Whisper AI, featuring automatic language detection and built-in translation to multiple languages.
+- **🎙️ Recording Studio**: Upload a backing track, sing along, and record your own vocals directly in your browser.
+- **🎛️ Audio Merger (Mixer)**: Mix multiple audio files together. Adjust individual volumes, align tracks, and export your custom mix as a high-quality WAV file.
+- **✨ Full Studio**: The complete experience. Upload a track, split the stems, extract the lyrics, record your vocals over the isolated instrumental, mix it all together, and export your final masterpiece.
 
----
+## 🚀 Key Advantages
 
-## ✨ Features
+- **100% Client-Side**: All audio processing and AI inference happens directly in your browser using WebGPU. Your audio files never leave your computer, ensuring absolute privacy.
+- **Zero Latency & No Queues**: Because it runs on your hardware, you don't have to wait for server queues.
+- **Offline Capable**: Once the AI models are cached in your browser (via IndexedDB), the application can function entirely offline.
+- **Free Forever**: No subscriptions, no hidden fees, no limits on the number of songs you can process.
 
-- 🧠 **Powered by HTDemucs (Meta AI)** — state-of-the-art music source separation model
-- 🔒 **100% Private** — no uploads, everything runs locally in your browser
-- 🎤 **Separates Vocals, Drums, Bass, and Other Instruments** into individual stems
-- 📝 **AI Lyrics Extraction** — Multilingual speech-to-text using Whisper AI (WebGPU-accelerated)
-- 🎙️ **Studio Recording** — Record your own vocals or instruments directly in the browser and add them to the mix
-- 🎛️ **Real-time Mixer & Scrubbing** — Adjust volume, solo, mute stems, and scrub through the interactive waveforms
-- 💾 **Advanced Export** — Download individual stems, selected tracks as ZIP, or mix them down into a single song
-- ⚡ **WebGPU Accelerated** — blazing fast processing with WASM fallback for broader compatibility
-- 📱 **Responsive Design** — works seamlessly on desktop and mobile
-- 💾 **Model Caching** — download the model once, use it forever (cached in your browser)
+## 🛠️ Technology Stack
 
----
+- **Frontend**: Vanilla HTML/CSS/JavaScript bundled with [Vite](https://vitejs.dev/).
+- **Audio Processing**: Web Audio API (OfflineAudioContext for rendering, BiquadFilters for mixing).
+- **AI Inference Engine**: [ONNX Runtime Web](https://onnxruntime.ai/docs/tutorials/web/) with WebGPU acceleration (fallback to WASM).
+- **Models**:
+  - **Music Separation**: [HTDemucs](https://github.com/facebookresearch/demucs) (Fine-tuned for WebGPU).
+  - **Speech-to-Text**: [Whisper](https://github.com/openai/whisper) (ONNX quantized).
 
-## 🚀 How to Use
+## 💻 Local Setup & Installation
 
-1. **Open the app** in your browser
-2. **Drop or select** an audio file
-3. **Wait** for processing (first run downloads the AI model ~80MB)
-4. **Download** your separated stems — vocals, drums, bass, and other instruments
+To run this project locally from scratch, ensure you have **Node.js (v18+)** installed.
 
-That's it! No account needed, no data sent anywhere.
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yourusername/seperatorvoiceinstrument.git
+   cd seperatorvoiceinstrument
+   ```
 
----
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-## 🎧 Supported Formats
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+   *The app will be available at `http://localhost:5173`.*
 
-| Format | Extension |
-|--------|-----------|
-| MP3    | `.mp3`    |
-| WAV    | `.wav`    |
-| FLAC   | `.flac`   |
-| OGG    | `.ogg`    |
-| AAC    | `.aac`    |
-| M4A    | `.m4a`    |
+4. **Build for production:**
+   ```bash
+   npm run build
+   ```
+   *The compiled files will be output to the `dist` directory, ready to be deployed to GitHub Pages, Vercel, Netlify, or any static hosting service.*
 
----
+## 🤝 Contributing
 
-## 🛠 Tech Stack
-
-| Technology | Purpose |
-|------------|---------|
-| [Vite](https://vitejs.dev/) | Build tool & dev server |
-| [ONNX Runtime Web](https://onnxruntime.ai/) | In-browser AI model inference |
-| [HTDemucs](https://github.com/facebookresearch/demucs) | Music source separation model (Meta AI) |
-| [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) | Audio decoding & processing |
-| [WebGPU](https://www.w3.org/TR/webgpu/) | GPU-accelerated computation |
-
----
-
-## 💻 Local Development
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) 18+ (recommended: 20 LTS)
-- npm (comes with Node.js)
-
-### Setup & Run
-
-```bash
-# Clone the repository
-git clone https://github.com/baybarse/seperatorvoiceinstrument.git
-cd seperatorvoiceinstrument
-
-# Install dependencies
-npm install
-
-# Start the development server
-npm run dev
-```
-
-The app will be available at `http://localhost:5173/seperatorvoiceinstrument/`.
-
-### Build & Preview Production
-
-```bash
-# Build for production
-npm run build
-
-# Preview the production build locally
-npm run preview
-```
-
-The production build will be output to the `dist/` directory.
-Preview will serve it at `http://localhost:4173/seperatorvoiceinstrument/`.
-
----
-
-## 🌐 Deployment
-
-This project is **automatically deployed** to GitHub Pages via GitHub Actions on every push to the `main` branch.
-
-To set up deployment for your fork:
-
-1. Go to your repository **Settings** → **Pages**
-2. Set **Source** to **GitHub Actions**
-3. Push to `main` — the workflow will handle the rest
-
----
-
-## 🙏 Credits
-
-- **[Meta AI](https://ai.meta.com/)** — for the [Demucs](https://github.com/facebookresearch/demucs) music source separation model
-- **[ONNX Runtime](https://onnxruntime.ai/)** team — for making AI inference possible in the browser
-- **[Vite](https://vitejs.dev/)** — for the lightning-fast build tooling
-
----
+Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/yourusername/seperatorvoiceinstrument/issues).
 
 ## 📄 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](./LICENSE) file for details.
-
----
-
-<p align="center">
-  Made with ❤️ for musicians and audio enthusiasts
-</p>
+This project is open-source and available under the MIT License.
