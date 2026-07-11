@@ -573,6 +573,29 @@ function setupResultsHandlers() {
     });
   });
 
+  // Play Selected button
+  const playSelectedBtn = document.getElementById('play-selected-btn');
+  if (playSelectedBtn) {
+    playSelectedBtn.addEventListener('click', () => {
+      const selectedStems = STEMS.filter(stem => selectedState[stem]);
+      if (selectedStems.length === 0) return;
+      
+      const isAnyPlaying = selectedStems.some(stem => playingState[stem]);
+      
+      if (isAnyPlaying) {
+        selectedStems.forEach(stem => {
+          if (playingState[stem]) stopPlayback(stem);
+        });
+        playSelectedBtn.innerHTML = '<span class="btn-icon" style="font-size: 1.2rem;">▶</span> Play Selected';
+      } else {
+        selectedStems.forEach(stem => {
+          if (!playingState[stem]) startPlayback(stem);
+        });
+        playSelectedBtn.innerHTML = '<span class="btn-icon" style="font-size: 1.2rem;">⏸</span> Pause Selected';
+      }
+    });
+  }
+
   // Volume sliders
   document.querySelectorAll('.volume-slider').forEach((slider) => {
     slider.addEventListener('input', (e) => {
@@ -1126,10 +1149,19 @@ function getCurrentTime(stem) {
 }
 
 function updatePlayButton(stem, isPlaying) {
-  const btn = $(`play-${stem}`);
+  const btn = document.getElementById(`play-${stem}`);
   if (btn) {
     btn.textContent = isPlaying ? '⏸' : '▶';
     btn.classList.toggle('active', isPlaying);
+  }
+  
+  // Also update master play button if present
+  const playSelectedBtn = document.getElementById('play-selected-btn');
+  if (playSelectedBtn) {
+    const isAnyPlaying = STEMS.some(s => playingState[s]);
+    if (!isAnyPlaying) {
+      playSelectedBtn.innerHTML = '<span class="btn-icon" style="font-size: 1.2rem;">▶</span> Play Selected';
+    }
   }
 }
 
