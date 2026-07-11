@@ -820,6 +820,9 @@ function setupResultsHandlers() {
   if (downloadSelectedBtn) downloadSelectedBtn.addEventListener('click', downloadSelectedStems);
   if (downloadMixBtn) downloadMixBtn.addEventListener('click', downloadMix);
   
+  const downloadMixBtnStudio = document.getElementById('download-mix-btn-studio');
+  if (downloadMixBtnStudio) downloadMixBtnStudio.addEventListener('click', downloadMix);
+  
   const newSeparationBtn = document.getElementById('new-separation-btn');
   if (newSeparationBtn) {
     newSeparationBtn.addEventListener('click', () => {
@@ -1731,8 +1734,14 @@ async function downloadMix() {
     return;
   }
 
-  downloadMixBtn.innerHTML = '<span class="btn-icon">🎵</span> Mixing...';
+  downloadMixBtn.innerHTML = '<span class="btn-icon">🎛️</span> Mixing...';
   downloadMixBtn.disabled = true;
+  
+  const studioBtn = document.getElementById('download-mix-btn-studio');
+  if (studioBtn) {
+    studioBtn.innerHTML = '<div style="font-size: 1.1rem; font-weight: 600;"><span class="btn-icon">⏳</span> Mixing...</div><div style="font-size: 0.8rem; font-weight: normal; opacity: 0.8; margin-top: 0.25rem;">Please wait</div>';
+    studioBtn.disabled = true;
+  }
 
   try {
     // Determine mix length to accommodate long recordings
@@ -1800,8 +1809,13 @@ async function downloadMix() {
     console.error('Mixdown failed:', err);
     showError(`Mixdown failed: ${err.message}`);
   } finally {
-    downloadMixBtn.innerHTML = '<span class="btn-icon">🎵</span> Download as One Song';
+    downloadMixBtn.innerHTML = '<span class="btn-icon">🎛️</span> Download Custom Mix';
     downloadMixBtn.disabled = false;
+    
+    if (studioBtn) {
+      studioBtn.innerHTML = '<div style="font-size: 1.1rem; font-weight: 600;"><span class="btn-icon">🎛️</span> Download Custom Mix</div><div style="font-size: 0.8rem; font-weight: normal; opacity: 0.8; margin-top: 0.25rem;">(Includes Stems & Recordings)</div>';
+      studioBtn.disabled = false;
+    }
   }
 }
 
