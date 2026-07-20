@@ -1765,3 +1765,507 @@ body {
   max-width: 800px;
 }
 
+/* ============================================================
+   FX Button on Stem Cards
+   ============================================================ */
+
+.fx-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  background: rgba(168, 85, 247, 0.1);
+  color: #c084fc;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.fx-btn:hover {
+  background: rgba(168, 85, 247, 0.25);
+  border-color: rgba(168, 85, 247, 0.7);
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.2);
+  transform: translateY(-1px);
+}
+
+.fx-btn.has-effects {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3));
+  border-color: rgba(168, 85, 247, 0.6);
+  animation: fx-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes fx-glow {
+  0% { box-shadow: 0 0 5px rgba(168, 85, 247, 0.2); }
+  100% { box-shadow: 0 0 15px rgba(168, 85, 247, 0.4); }
+}
+
+/* ============================================================
+   FX Panel Overlay & Modal
+   ============================================================ */
+
+.fx-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fx-overlay-in 0.3s ease-out;
+}
+
+.fx-overlay.hidden {
+  display: none;
+}
+
+@keyframes fx-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fx-panel {
+  width: 95%;
+  max-width: 720px;
+  max-height: 90vh;
+  background: linear-gradient(145deg, rgba(18, 18, 26, 0.97), rgba(10, 10, 15, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 40px rgba(168, 85, 247, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fx-panel-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fx-panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ── Header ── */
+
+.fx-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.fx-panel-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.fx-panel-icon {
+  font-size: 1.5rem;
+}
+
+.fx-panel-title-group h2 {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  font-weight: 700;
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.fx-stem-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.fx-stem-badge[data-stem="drums"] {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+.fx-stem-badge[data-stem="bass"] {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+.fx-stem-badge[data-stem="other"] {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.fx-panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fx-header-btn {
+  font-size: 0.85rem !important;
+  padding: 0.4rem 0.8rem !important;
+}
+
+.fx-close-btn {
+  font-size: 1.2rem !important;
+  padding: 0.3rem 0.6rem !important;
+  color: var(--color-text-muted) !important;
+}
+
+.fx-close-btn:hover {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* ── Presets Section ── */
+
+.fx-presets-section {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.fx-section-label {
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.fx-presets-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.fx-preset-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text);
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.fx-preset-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(168, 85, 247, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.fx-preset-btn.active {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(59, 130, 246, 0.25));
+  border-color: rgba(168, 85, 247, 0.5);
+  color: #e2e8f0;
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.15);
+}
+
+.fx-preset-more-btn {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.3);
+  color: #c084fc;
+}
+
+.fx-preset-more-btn:hover {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.5);
+}
+
+.fx-preset-icon {
+  font-size: 1rem;
+}
+
+/* ── Effects List ── */
+
+.fx-effects-section {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+  min-height: 0;
+}
+
+.fx-effects-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ── Effect Card ── */
+
+.fx-effect-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: all var(--transition-fast);
+}
+
+.fx-effect-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.fx-effect-card.active {
+  border-color: rgba(168, 85, 247, 0.3);
+  background: rgba(168, 85, 247, 0.05);
+}
+
+.fx-effect-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.fx-effect-icon {
+  font-size: 1.15rem;
+  width: 28px;
+  text-align: center;
+}
+
+.fx-effect-name {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.fx-effect-category {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  padding: 0.15rem 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-full);
+  margin-right: 0.5rem;
+}
+
+/* ── Toggle Switch ── */
+
+.fx-toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.fx-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.fx-toggle-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 11px;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.fx-toggle-slider::before {
+  content: '';
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  transition: all var(--transition-fast);
+}
+
+.fx-toggle input:checked + .fx-toggle-slider {
+  background: linear-gradient(135deg, #a855f7, #3b82f6);
+}
+
+.fx-toggle input:checked + .fx-toggle-slider::before {
+  transform: translateX(18px);
+  background: #fff;
+}
+
+/* ── Effect Parameters ── */
+
+.fx-effect-params {
+  padding: 0 1rem 0.75rem 1rem;
+  display: none;
+}
+
+.fx-effect-card.active .fx-effect-params {
+  display: block;
+}
+
+.fx-param-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.fx-param-row:last-child {
+  margin-bottom: 0;
+}
+
+.fx-param-label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  min-width: 90px;
+  flex-shrink: 0;
+}
+
+.fx-param-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+  transition: background var(--transition-fast);
+}
+
+.fx-param-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a855f7, #3b82f6);
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(168, 85, 247, 0.4);
+  transition: transform var(--transition-fast);
+}
+
+.fx-param-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.fx-param-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a855f7, #3b82f6);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 6px rgba(168, 85, 247, 0.4);
+}
+
+.fx-param-value {
+  font-size: 0.78rem;
+  font-family: monospace;
+  color: #c084fc;
+  min-width: 50px;
+  text-align: right;
+}
+
+/* ── Footer ── */
+
+.fx-panel-footer {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.fx-footer-btn {
+  flex: 1;
+  padding: 0.75rem 1rem !important;
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+}
+
+/* ── Category Divider ── */
+
+.fx-category-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0 0.25rem 0;
+  padding: 0 0.25rem;
+}
+
+.fx-category-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.fx-category-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 640px) {
+  .fx-panel {
+    width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    max-width: 100%;
+  }
+
+  .fx-panel-header {
+    padding: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .fx-presets-section,
+  .fx-effects-section {
+    padding: 0.75rem 1rem;
+  }
+
+  .fx-panel-footer {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+  }
+
+  .fx-param-label {
+    min-width: 70px;
+    font-size: 0.75rem;
+  }
+}

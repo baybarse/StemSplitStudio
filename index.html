@@ -163,8 +163,13 @@
           </div>
 
           <div class="feature-detail-card" style="padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05);">
+            <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;"><span style="font-size: 1.5rem;">🎛️</span> Advanced Audio FX Suite</h3>
+            <p style="color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.6;">Apply <strong>35+ professional audio effects</strong> (Reverb, Auto-Tune, EQ, Compression, Distortion, etc.) directly to individual stems. Includes <strong>70+ quick presets</strong> like <em>Concert Hall, Radio Ready, Robot Voice, and Tape Saturation</em>. Effects are applied in real-time and baked in when downloading.</p>
+          </div>
+
+          <div class="feature-detail-card" style="padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05);">
             <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;"><span style="font-size: 1.5rem;">💾</span> Advanced Exporting</h3>
-            <p style="color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.6;">Download separated stems individually, grab them all as a ZIP file, or <strong>dynamically mix selected tracks into a custom WAV file using your current volume and mute settings</strong>.</p>
+            <p style="color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.6;">Download separated stems individually, grab them all as a ZIP file, or <strong>dynamically mix selected tracks into a custom WAV file using your current volume, mute settings, and active effects</strong>.</p>
           </div>
 
           <div class="feature-detail-card" style="padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05);">
@@ -370,6 +375,7 @@
               </div>
               <button class="solo-btn" id="solo-vocals" data-stem="vocals" aria-label="Solo vocals" title="Solo">S</button>
               <button class="mute-btn" id="mute-vocals" data-stem="vocals" aria-label="Mute vocals" title="Mute">M</button>
+              <button class="fx-btn" id="fx-vocals" data-stem="vocals" aria-label="Effects for vocals" title="Audio Effects">🎛️ FX</button>
               <button class="download-btn" id="download-vocals" data-stem="vocals" aria-label="Download vocals" title="Download">⬇</button>
             </div>
           </div>
@@ -393,6 +399,7 @@
               </div>
               <button class="solo-btn" id="solo-drums" data-stem="drums" aria-label="Solo drums" title="Solo">S</button>
               <button class="mute-btn" id="mute-drums" data-stem="drums" aria-label="Mute drums" title="Mute">M</button>
+              <button class="fx-btn" id="fx-drums" data-stem="drums" aria-label="Effects for drums" title="Audio Effects">🎛️ FX</button>
               <button class="download-btn" id="download-drums" data-stem="drums" aria-label="Download drums" title="Download">⬇</button>
             </div>
           </div>
@@ -416,6 +423,7 @@
               </div>
               <button class="solo-btn" id="solo-bass" data-stem="bass" aria-label="Solo bass" title="Solo">S</button>
               <button class="mute-btn" id="mute-bass" data-stem="bass" aria-label="Mute bass" title="Mute">M</button>
+              <button class="fx-btn" id="fx-bass" data-stem="bass" aria-label="Effects for bass" title="Audio Effects">🎛️ FX</button>
               <button class="download-btn" id="download-bass" data-stem="bass" aria-label="Download bass" title="Download">⬇</button>
             </div>
           </div>
@@ -439,6 +447,7 @@
               </div>
               <button class="solo-btn" id="solo-other" data-stem="other" aria-label="Solo other" title="Solo">S</button>
               <button class="mute-btn" id="mute-other" data-stem="other" aria-label="Mute other" title="Mute">M</button>
+              <button class="fx-btn" id="fx-other" data-stem="other" aria-label="Effects for other" title="Audio Effects">🎛️ FX</button>
               <button class="download-btn" id="download-other" data-stem="other" aria-label="Download other" title="Download">⬇</button>
             </div>
           </div>
@@ -449,11 +458,11 @@
             <button id="download-selected-btn" class="btn btn-primary" title="Download selected stems individually">
               <span class="btn-icon">⬇</span> Download Selected
             </button>
-            <button id="download-mix-btn" class="btn btn-primary" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.5rem 1rem;" title="Creates a mix using your current volume levels">
+            <button id="download-mix-btn" class="btn btn-primary" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.5rem 1rem;" title="Creates a mix using your current volume levels and effects">
               <div><span class="btn-icon">🎵</span> Download Custom Mix</div>
-              <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 2px;">(Uses current volume/mute settings)</div>
+              <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 2px;">(With FX, volume/mute settings)</div>
             </button>
-            <button id="download-all-btn" class="btn btn-secondary" title="Download all stems as ZIP">
+            <button id="download-all-btn" class="btn btn-secondary" title="Download all stems with effects as ZIP">
               <span class="btn-icon">📦</span> Download All as ZIP
             </button>
           </div>
@@ -616,6 +625,49 @@
       </div>
     </footer>
   </div>
+
+    <!-- ===================== FX PANEL MODAL ===================== -->
+    <div id="fx-panel-overlay" class="fx-overlay hidden">
+      <div class="fx-panel">
+        <div class="fx-panel-header">
+          <div class="fx-panel-title-group">
+            <span class="fx-panel-icon">🎛️</span>
+            <h2 id="fx-panel-title">Audio Effects</h2>
+            <span id="fx-panel-stem-badge" class="fx-stem-badge">Vocals</span>
+          </div>
+          <div class="fx-panel-header-actions">
+            <button id="fx-reset-all-btn" class="btn btn-ghost fx-header-btn" title="Reset all effects">🔄 Reset All</button>
+            <button id="fx-close-btn" class="btn btn-ghost fx-header-btn fx-close-btn" title="Close">✕</button>
+          </div>
+        </div>
+
+        <!-- Presets Row -->
+        <div class="fx-presets-section">
+          <h3 class="fx-section-label">⚡ Quick Presets</h3>
+          <div id="fx-presets-grid" class="fx-presets-grid">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Effects List -->
+        <div class="fx-effects-section">
+          <h3 class="fx-section-label">🎚️ Effects Chain</h3>
+          <div id="fx-effects-list" class="fx-effects-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Bottom Actions -->
+        <div class="fx-panel-footer">
+          <button id="fx-download-with-btn" class="btn btn-primary fx-footer-btn">
+            <span class="btn-icon">⬇</span> Download with FX
+          </button>
+          <button id="fx-download-without-btn" class="btn btn-secondary fx-footer-btn">
+            <span class="btn-icon">⬇</span> Download Clean
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- ===================== FULL STUDIO MODAL ===================== -->
     <div id="full-studio-modal" class="hidden">

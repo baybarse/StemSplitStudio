@@ -35,21 +35,25 @@ Whether you need to extract vocals from a song, transcribe multilingual lyrics, 
    - Automatically transcribe the vocal track into timestamped lyrics (`.txt`) supporting dozens of languages.
 4. **🎛️ Live Browser DAW & Mixer**
    - Adjust individual stem volumes, mute/solo tracks, and view synchronized dynamic waveforms in real time.
-5. **🎤 Live Studio Recording**
+5. **🎚️ Advanced Audio FX Suite**
+   - Apply over **35+ real-time audio effects** (Reverb, Auto-Tune, Chorus, EQ, Compression, Distortion, Phaser, Pitch Shift, and more) to individual stems.
+   - Choose from **70+ quick presets** categorized for Vocals (e.g. *Radio Ready, Concert Hall, Robot Voice, Chipmunk, Auto-Tune Hard*) and Instruments (e.g. *Fat & Heavy, Reggae Dub, Tape Saturation, Vintage, Slapback*).
+   - Effects are completely integrated: preview them live during playback and bake them into your final WAV exports with offline rendering.
+6. **🎤 Live Studio Recording**
    - Sing directly over your separated backing tracks using your microphone, perfectly synchronized down to the millisecond.
-6. **✂️ Regional Audio Editing & Trimming**
+7. **✂️ Regional Audio Editing & Trimming**
    - Visually define start and end segments to instantly **Mute** or **Isolate** regions of a specific stem.
-7. **⏱️ Precision Export Trimming**
+8. **⏱️ Precision Export Trimming**
    - Set custom time boundaries to export only the specific section of the mix you want.
-8. **🔄 Track Merger**
+9. **🔄 Track Merger**
    - Seamlessly drag, drop, reorder, and stitch multiple audio files together without re-encoding latency.
-9. **💾 Advanced Local Caching**
+10. **💾 Advanced Local Caching**
    - Gigabytes of ONNX AI models are downloaded once to IndexedDB. Subsequent visits instantly load the models from your hard drive, allowing complete offline usage.
-10. **⚡ WebGPU Accelerated**
+11. **⚡ WebGPU Accelerated**
     - Experience blazing fast inference times by utilizing your system's graphics card, with an automatic WASM fallback for older devices.
-11. **⬇️ Dynamic Mixdown Export**
+12. **⬇️ Dynamic Mixdown Export**
     - Export individual stems, download everything as a ZIP, or generate a custom `.wav` mix utilizing your current volume/mute settings and recorded overdubs.
-12. **🎨 Premium Dark UI**
+13. **🎨 Premium Dark UI**
     - A stunning, glassmorphism-inspired dark mode interface with micro-animations and responsive design.
 
 ---

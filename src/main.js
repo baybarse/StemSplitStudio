@@ -12,6 +12,7 @@ import { decodeAudioFile, encodeWav, createAudioBuffer } from './audio-engine.js
 import { WaveformRenderer } from './waveform.js';
 import { extractLyrics } from './lyrics-extractor.js';
 import { AudioRecorder } from './recorder.js';
+import { EFFECT_CATEGORIES, PRESETS, EffectsChain, renderWithEffects, getEffectParamDefs } from './audio-fx.js';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -68,6 +69,15 @@ const volumeState = {};
 
 /** @type {Record<string, boolean>} Per-stem checkbox selection state. */
 const selectedState = {};
+
+/** @type {Record<string, EffectsChain>} Per-stem effects chain. */
+const effectsChains = {};
+
+/** @type {string|null} Currently open FX panel stem. */
+let fxPanelStem = null;
+
+/** @type {string|null} Currently active preset per stem. */
+const activePreset = {};
 
 /** @type {Array<{id: string, name: string, data: Float32Array[], blob: Blob, duration: number, isPlaying: boolean, volume: number, isMuted: boolean, isSelected: boolean}>} Recorded tracks. */
 const recordedTracks = [];
@@ -160,6 +170,7 @@ function init() {
   setupLyricsHandlers();
   setupRecordingHandlers();
   setupDawHandlers();
+  setupFxHandlers();
   setupKeyboardShortcuts();
 
   console.log('[StemSplit] App initialised');
@@ -221,11 +232,14 @@ function startMode(mode) {
     uploadSection.classList.remove('hidden');
     // Change upload text based on mode
     if (mode === 'lyrics') {
-      $('.upload-title').textContent = 'Upload song for Lyrics Extraction';
+      const t = document.querySelector('.upload-title');
+      if (t) t.textContent = 'Upload song for Lyrics Extraction';
     } else if (mode === 'recorder') {
-      $('.upload-title').textContent = 'Upload backing track for Recording';
+      const t = document.querySelector('.upload-title');
+      if (t) t.textContent = 'Upload backing track for Recording';
     } else {
-      $('.upload-title').textContent = 'Drop your audio file here';
+      const t = document.querySelector('.upload-title');
+      if (t) t.textContent = 'Drop your audio file here';
     }
   }
 }
@@ -1419,12 +1433,19 @@ function startPlayback(stem) {
   const gainNode = audioCtx.createGain();
 
   source.buffer = buffer;
-  source.connect(gainNode);
-  gainNode.connect(audioCtx.destination);
 
   // Apply current volume and mute state
   const effectiveVolume = getEffectiveVolume(stem);
   gainNode.gain.value = effectiveVolume;
+
+  // Route through effects chain if active
+  const chain = effectsChains[stem];
+  if (chain && chain.hasActiveEffects()) {
+    chain.connect(source, gainNode);
+  } else {
+    source.connect(gainNode);
+  }
+  gainNode.connect(audioCtx.destination);
 
   const startOffset = audioSources[stem]?.startOffset || 0;
   source.start(0, startOffset);
@@ -1458,6 +1479,8 @@ function startPlayback(stem) {
         waveformRenderers[stem].stopAnimation();
         waveformRenderers[stem].setPlaybackPosition(0);
       }
+      // Cleanup FX chain nodes
+      if (effectsChains[stem]) effectsChains[stem].cleanup();
     }
   };
 }
@@ -1476,6 +1499,9 @@ function stopPlayback(stem) {
   } catch (_) {
     // Already stopped
   }
+
+  // Cleanup FX chain nodes
+  if (effectsChains[stem]) effectsChains[stem].cleanup();
 
   playingState[stem] = false;
   updatePlayButton(stem, false);
@@ -1596,7 +1622,7 @@ function applyVolume(stem) {
 
 // ─── Download ───────────────────────────────────────────────────────────────
 
-function downloadStem(stem, downloadDirectly = true) {
+async function downloadStem(stem, downloadDirectly = true, withFx = true) {
   if (!stems[stem]) return null;
   
   const { start, end } = getTrimRegion();
@@ -1608,7 +1634,7 @@ function downloadStem(stem, downloadDirectly = true) {
   const volume = getEffectiveVolume(stem);
   
   // Create a new Float32Array to hold the cropped and volume-adjusted data
-  const processedData = [
+  let processedData = [
     new Float32Array(length),
     new Float32Array(length)
   ];
@@ -1619,11 +1645,22 @@ function downloadStem(stem, downloadDirectly = true) {
     processedData[1][i] = stemData[1] ? (stemData[1][srcIndex] || 0) * volume : processedData[0][i];
   }
 
+  // Apply effects if active
+  const chain = effectsChains[stem];
+  if (withFx && chain && chain.hasActiveEffects()) {
+    try {
+      processedData = await renderWithEffects(processedData, decodedAudio.sampleRate, chain.effects);
+    } catch (err) {
+      console.warn(`[FX] Offline render failed for ${stem}:`, err);
+    }
+  }
+
   const wavBlob = encodeWav(processedData, decodedAudio.sampleRate);
   
   if (downloadDirectly) {
     const baseName = currentFile.name.replace(/\.[^.]+$/, '');
-    downloadBlob(wavBlob, `${baseName}_${stem}.wav`);
+    const suffix = (withFx && chain && chain.hasActiveEffects()) ? '_fx' : '';
+    downloadBlob(wavBlob, `${baseName}_${stem}${suffix}.wav`);
   }
   
   return wavBlob;
@@ -1645,12 +1682,12 @@ async function downloadAllStems() {
     const zip = new window.JSZip();
     const folder = zip.folder(baseName + '_stems');
 
-    STEMS.forEach((stem) => {
+    for (const stem of STEMS) {
       if (stems[stem]) {
-        const wavBlob = downloadStem(stem, false);
+        const wavBlob = await downloadStem(stem, false);
         folder.file(`${baseName}_${stem}.wav`, wavBlob);
       }
-    });
+    }
 
     const zipBlob = await zip.generateAsync({
       type: 'blob',
@@ -1701,12 +1738,12 @@ async function downloadSelectedStems() {
     const zip = new window.JSZip();
     const folder = zip.folder(baseName + '_selected_stems');
 
-    selectedStems.forEach((stem) => {
+    for (const stem of selectedStems) {
       if (stems[stem]) {
-        const wavBlob = downloadStem(stem, false);
+        const wavBlob = await downloadStem(stem, false);
         folder.file(`${stem}.wav`, wavBlob);
       }
-    });
+    }
 
     const zipBlob = await zip.generateAsync({ type: 'blob' });
     downloadBlob(zipBlob, `${baseName}_selected.zip`);
@@ -1760,13 +1797,25 @@ async function downloadMix() {
     const mixedL = new Float32Array(length);
     const mixedR = new Float32Array(length);
     
-    // Mix stems
-    selectedStems.forEach(stem => {
-      if (!stems[stem]) return;
+    // Mix stems (with FX applied via offline rendering)
+    for (const stem of selectedStems) {
+      if (!stems[stem]) continue;
       const vol = getEffectiveVolume(stem); // Applies solo/mute logic
       
-      const l = stems[stem][0];
-      const r = stems[stem][1] || stems[stem][0]; // mono fallback
+      let stemData = stems[stem];
+      
+      // Render effects offline if active
+      const chain = effectsChains[stem];
+      if (chain && chain.hasActiveEffects()) {
+        try {
+          stemData = await renderWithEffects(stemData, sampleRate, chain.effects);
+        } catch (err) {
+          console.warn(`[FX] Offline render failed for ${stem} during mixdown:`, err);
+        }
+      }
+      
+      const l = stemData[0];
+      const r = stemData[1] || stemData[0]; // mono fallback
       
       for (let i = 0; i < length; i++) {
         if (i < l.length) {
@@ -1774,7 +1823,7 @@ async function downloadMix() {
           mixedR[i] += (r[i] || 0) * vol;
         }
       }
-    });
+    }
     
     // Mix recorded tracks with time alignment
     for (const track of selectedTracks) {
@@ -1865,6 +1914,18 @@ function resetToUpload() {
   recordedTracks.length = 0;
   if (recordedTracksDiv) recordedTracksDiv.innerHTML = '';
   
+  // Reset FX chains
+  STEMS.forEach((stem) => {
+    if (effectsChains[stem]) {
+      effectsChains[stem].cleanup();
+      effectsChains[stem].clearAll();
+    }
+    activePreset[stem] = null;
+    const fxBtn = document.getElementById(`fx-${stem}`);
+    if (fxBtn) fxBtn.classList.remove('has-effects');
+  });
+  fxPanelStem = null;
+  
   lyricsResult = null;
 
   // Reset sections
@@ -1901,6 +1962,403 @@ function showError(message) {
     toast.classList.remove('visible');
     setTimeout(() => toast.remove(), 300);
   }, 6000);
+}
+
+// ─── Audio Effects (FX) Panel ───────────────────────────────────────────────
+
+function setupFxHandlers() {
+  // FX buttons on stem cards
+  document.querySelectorAll('.fx-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const stem = btn.dataset.stem;
+      openFxPanel(stem);
+    });
+  });
+
+  // Close button
+  const closeBtn = document.getElementById('fx-close-btn');
+  if (closeBtn) closeBtn.addEventListener('click', closeFxPanel);
+
+  // Overlay click to close
+  const overlay = document.getElementById('fx-panel-overlay');
+  if (overlay) {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeFxPanel();
+    });
+  }
+
+  // Reset all
+  const resetBtn = document.getElementById('fx-reset-all-btn');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (!fxPanelStem) return;
+      const chain = effectsChains[fxPanelStem];
+      if (chain) {
+        chain.cleanup();
+        chain.clearAll();
+      }
+      activePreset[fxPanelStem] = null;
+      updateFxButtonState(fxPanelStem);
+      renderFxPanel(fxPanelStem);
+
+      // Restart playback to reflect changes
+      if (playingState[fxPanelStem]) {
+        stopPlayback(fxPanelStem);
+        startPlayback(fxPanelStem);
+      }
+    });
+  }
+
+  // Download with FX
+  const downloadWithBtn = document.getElementById('fx-download-with-btn');
+  if (downloadWithBtn) {
+    downloadWithBtn.addEventListener('click', async () => {
+      if (!fxPanelStem || !stems[fxPanelStem]) return;
+      downloadWithBtn.innerHTML = '<span class="btn-icon">⏳</span> Rendering FX...';
+      downloadWithBtn.disabled = true;
+      try {
+        await downloadStem(fxPanelStem, true, true);
+      } finally {
+        downloadWithBtn.innerHTML = '<span class="btn-icon">⬇</span> Download with FX';
+        downloadWithBtn.disabled = false;
+      }
+    });
+  }
+
+  // Download without FX
+  const downloadWithoutBtn = document.getElementById('fx-download-without-btn');
+  if (downloadWithoutBtn) {
+    downloadWithoutBtn.addEventListener('click', async () => {
+      if (!fxPanelStem || !stems[fxPanelStem]) return;
+      await downloadStem(fxPanelStem, true, false);
+    });
+  }
+}
+
+function openFxPanel(stem) {
+  fxPanelStem = stem;
+
+  // Ensure AudioContext and EffectsChain exist
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (!effectsChains[stem]) {
+    effectsChains[stem] = new EffectsChain(audioCtx);
+  }
+
+  // Update header
+  const badge = document.getElementById('fx-panel-stem-badge');
+  if (badge) {
+    const stemNames = { vocals: 'Vocals', drums: 'Drums', bass: 'Bass', other: 'Other' };
+    badge.textContent = stemNames[stem] || stem;
+    badge.setAttribute('data-stem', stem);
+  }
+
+  renderFxPanel(stem);
+
+  const overlay = document.getElementById('fx-panel-overlay');
+  if (overlay) overlay.classList.remove('hidden');
+}
+
+function closeFxPanel() {
+  const overlay = document.getElementById('fx-panel-overlay');
+  if (overlay) overlay.classList.add('hidden');
+  fxPanelStem = null;
+}
+
+function renderFxPanel(stem) {
+  const chain = effectsChains[stem];
+  if (!chain) return;
+
+  // Determine effect type: vocals get vocal effects, everything else gets instrument effects
+  const effectType = stem === 'vocals' ? 'vocals' : 'instruments';
+  const effects = EFFECT_CATEGORIES[effectType];
+  const presets = PRESETS[effectType];
+
+  // ── Render Presets ──
+  const presetsGrid = document.getElementById('fx-presets-grid');
+  if (presetsGrid) {
+    presetsGrid.innerHTML = '';
+    const INITIAL_COUNT = 7;
+    const isExpanded = presetsGrid.dataset.expanded === 'true';
+    const visiblePresets = isExpanded ? presets : presets.slice(0, INITIAL_COUNT);
+
+    visiblePresets.forEach((preset) => {
+      const btn = document.createElement('button');
+      btn.className = 'fx-preset-btn' + (activePreset[stem] === preset.id ? ' active' : '');
+      btn.innerHTML = `<span class="fx-preset-icon">${preset.icon}</span> ${preset.name}`;
+      btn.addEventListener('click', () => {
+        applyPreset(stem, preset);
+        // Preserve expanded state
+        const wasExpanded = presetsGrid.dataset.expanded === 'true';
+        renderFxPanel(stem);
+        if (wasExpanded) presetsGrid.dataset.expanded = 'true';
+        // Re-render with expanded state
+        if (wasExpanded) {
+          const grid = document.getElementById('fx-presets-grid');
+          if (grid) { grid.dataset.expanded = 'true'; renderFxPresets(stem); }
+        }
+        if (playingState[stem]) {
+          stopPlayback(stem);
+          startPlayback(stem);
+        }
+      });
+      presetsGrid.appendChild(btn);
+    });
+
+    // "More" / "Less" button
+    if (presets.length > INITIAL_COUNT) {
+      const moreBtn = document.createElement('button');
+      moreBtn.className = 'fx-preset-btn fx-preset-more-btn';
+      if (isExpanded) {
+        moreBtn.innerHTML = '<span class="fx-preset-icon">▴</span> Less';
+      } else {
+        moreBtn.innerHTML = `<span class="fx-preset-icon">▾</span> More (${presets.length - INITIAL_COUNT})`;
+      }
+      moreBtn.addEventListener('click', () => {
+        presetsGrid.dataset.expanded = isExpanded ? 'false' : 'true';
+        renderFxPresets(stem);
+      });
+      presetsGrid.appendChild(moreBtn);
+    }
+  }
+
+  // ── Render Effects List ──
+  const effectsList = document.getElementById('fx-effects-list');
+  if (!effectsList) return;
+  effectsList.innerHTML = '';
+
+  let lastCategory = '';
+
+  effects.forEach((effectDef) => {
+    // Category divider
+    if (effectDef.category !== lastCategory) {
+      lastCategory = effectDef.category;
+      const divider = document.createElement('div');
+      divider.className = 'fx-category-divider';
+      divider.innerHTML = `<span class="fx-category-label">${effectDef.category}</span>`;
+      effectsList.appendChild(divider);
+    }
+
+    const existingEffect = chain.effects.get(effectDef.id);
+    const isEnabled = existingEffect ? existingEffect.enabled : false;
+    const currentParams = existingEffect ? existingEffect.params : { ...effectDef.params };
+
+    const card = document.createElement('div');
+    card.className = 'fx-effect-card' + (isEnabled ? ' active' : '');
+    card.dataset.effectId = effectDef.id;
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'fx-effect-header';
+
+    const icon = document.createElement('span');
+    icon.className = 'fx-effect-icon';
+    icon.textContent = effectDef.icon;
+
+    const name = document.createElement('span');
+    name.className = 'fx-effect-name';
+    name.textContent = effectDef.name;
+
+    const categoryLabel = document.createElement('span');
+    categoryLabel.className = 'fx-effect-category';
+    categoryLabel.textContent = effectDef.category;
+
+    const toggle = document.createElement('label');
+    toggle.className = 'fx-toggle';
+    toggle.innerHTML = `<input type="checkbox" ${isEnabled ? 'checked' : ''}><span class="fx-toggle-slider"></span>`;
+
+    const checkbox = toggle.querySelector('input');
+    checkbox.addEventListener('change', (e) => {
+      e.stopPropagation();
+      const enabled = e.target.checked;
+      chain.setEffect(effectDef.id, enabled, currentParams);
+      card.classList.toggle('active', enabled);
+      activePreset[stem] = null; // Clear preset since user manually changed
+
+      updateFxButtonState(stem);
+
+      // Restart playback to apply change
+      if (playingState[stem]) {
+        stopPlayback(stem);
+        startPlayback(stem);
+      }
+
+      // Update presets UI
+      document.querySelectorAll('.fx-preset-btn').forEach(b => b.classList.remove('active'));
+    });
+
+    header.appendChild(icon);
+    header.appendChild(name);
+    header.appendChild(categoryLabel);
+    header.appendChild(toggle);
+
+    // Click header to expand/collapse (besides toggle)
+    header.addEventListener('click', (e) => {
+      if (e.target.closest('.fx-toggle')) return;
+      card.classList.toggle('active');
+    });
+
+    card.appendChild(header);
+
+    // Parameters
+    const paramDefs = getEffectParamDefs(effectDef.id);
+    if (paramDefs.length > 0) {
+      const paramsDiv = document.createElement('div');
+      paramsDiv.className = 'fx-effect-params';
+
+      paramDefs.forEach((pDef) => {
+        const row = document.createElement('div');
+        row.className = 'fx-param-row';
+
+        const label = document.createElement('span');
+        label.className = 'fx-param-label';
+        label.textContent = pDef.label;
+
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.className = 'fx-param-slider';
+        slider.min = pDef.min;
+        slider.max = pDef.max;
+        slider.step = pDef.step;
+        slider.value = currentParams[pDef.key] !== undefined ? currentParams[pDef.key] : pDef.min;
+
+        const valueDisplay = document.createElement('span');
+        valueDisplay.className = 'fx-param-value';
+        valueDisplay.textContent = formatParamValue(slider.value, pDef);
+
+        slider.addEventListener('input', (e) => {
+          const val = parseFloat(e.target.value);
+          currentParams[pDef.key] = val;
+          valueDisplay.textContent = formatParamValue(val, pDef);
+
+          // Update chain
+          chain.setEffect(effectDef.id, checkbox.checked, currentParams);
+          if (checkbox.checked) {
+            chain.updateParams(effectDef.id, { [pDef.key]: val });
+          }
+          activePreset[stem] = null;
+          document.querySelectorAll('.fx-preset-btn').forEach(b => b.classList.remove('active'));
+        });
+
+        row.appendChild(label);
+        row.appendChild(slider);
+        row.appendChild(valueDisplay);
+        paramsDiv.appendChild(row);
+      });
+
+      card.appendChild(paramsDiv);
+    }
+
+    effectsList.appendChild(card);
+  });
+}
+
+function applyPreset(stem, preset) {
+  const chain = effectsChains[stem];
+  if (!chain) return;
+
+  const effectType = stem === 'vocals' ? 'vocals' : 'instruments';
+  const allEffects = EFFECT_CATEGORIES[effectType];
+
+  // First disable everything
+  chain.cleanup();
+  chain.clearAll();
+
+  // Enable effects from preset
+  if (preset.id === 'clean') {
+    activePreset[stem] = 'clean';
+    updateFxButtonState(stem);
+    return;
+  }
+
+  for (const [effectId, params] of Object.entries(preset.effects)) {
+    // Find default params for this effect
+    const effectDef = allEffects.find(e => e.id === effectId);
+    const mergedParams = { ...(effectDef ? effectDef.params : {}), ...params };
+    chain.setEffect(effectId, true, mergedParams);
+  }
+
+  activePreset[stem] = preset.id;
+  updateFxButtonState(stem);
+}
+/**
+ * Re-renders only the presets grid (without touching effects list).
+ */
+function renderFxPresets(stem) {
+  const effectType = stem === 'vocals' ? 'vocals' : 'instruments';
+  const presets = PRESETS[effectType];
+  const presetsGrid = document.getElementById('fx-presets-grid');
+  if (!presetsGrid) return;
+
+  const INITIAL_COUNT = 7;
+  const isExpanded = presetsGrid.dataset.expanded === 'true';
+  const visiblePresets = isExpanded ? presets : presets.slice(0, INITIAL_COUNT);
+
+  presetsGrid.innerHTML = '';
+
+  visiblePresets.forEach((preset) => {
+    const btn = document.createElement('button');
+    btn.className = 'fx-preset-btn' + (activePreset[stem] === preset.id ? ' active' : '');
+    btn.innerHTML = `<span class="fx-preset-icon">${preset.icon}</span> ${preset.name}`;
+    btn.addEventListener('click', () => {
+      applyPreset(stem, preset);
+      const wasExpanded = presetsGrid.dataset.expanded === 'true';
+      renderFxPanel(stem);
+      if (wasExpanded) {
+        const grid = document.getElementById('fx-presets-grid');
+        if (grid) { grid.dataset.expanded = 'true'; renderFxPresets(stem); }
+      }
+      if (playingState[stem]) {
+        stopPlayback(stem);
+        startPlayback(stem);
+      }
+    });
+    presetsGrid.appendChild(btn);
+  });
+
+  // "More" / "Less" button
+  if (presets.length > INITIAL_COUNT) {
+    const moreBtn = document.createElement('button');
+    moreBtn.className = 'fx-preset-btn fx-preset-more-btn';
+    if (isExpanded) {
+      moreBtn.innerHTML = '<span class="fx-preset-icon">▴</span> Less';
+    } else {
+      moreBtn.innerHTML = `<span class="fx-preset-icon">▾</span> More (${presets.length - INITIAL_COUNT})`;
+    }
+    moreBtn.addEventListener('click', () => {
+      presetsGrid.dataset.expanded = isExpanded ? 'false' : 'true';
+      renderFxPresets(stem);
+    });
+    presetsGrid.appendChild(moreBtn);
+  }
+}
+
+function updateFxButtonState(stem) {
+  const chain = effectsChains[stem];
+  const fxBtn = document.getElementById(`fx-${stem}`);
+  if (!fxBtn) return;
+
+  if (chain && chain.hasActiveEffects()) {
+    fxBtn.classList.add('has-effects');
+    fxBtn.innerHTML = '🎛️ FX ✓';
+  } else {
+    fxBtn.classList.remove('has-effects');
+    fxBtn.innerHTML = '🎛️ FX';
+  }
+}
+
+function formatParamValue(value, paramDef) {
+  const v = parseFloat(value);
+  if (paramDef.unit === 'dB') return `${v > 0 ? '+' : ''}${v.toFixed(1)} dB`;
+  if (paramDef.unit === ':1') return `${v.toFixed(1)}:1`;
+  if (paramDef.unit === 's') return `${v.toFixed(3)}s`;
+  if (paramDef.unit === 'Hz') return `${v.toFixed(0)} Hz`;
+  if (paramDef.unit === 'st') return `${v > 0 ? '+' : ''}${v} st`;
+  if (paramDef.unit === 'x') return `${v.toFixed(1)}x`;
+  if (paramDef.unit === 'bits') return `${v} bits`;
+  if (paramDef.unit === '') return v.toFixed(2);
+  return `${v} ${paramDef.unit}`;
 }
 
 // ─── Keyboard Shortcuts ─────────────────────────────────────────────────────

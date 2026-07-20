@@ -212,9 +212,10 @@ function writeString(view, offset, str) {
  * @returns {AudioBuffer} A new AudioBuffer ready for playback.
  */
 export function createAudioBuffer(channelData, sampleRate) {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
   const numChannels = channelData.length;
   const numSamples = channelData[0].length;
+  // Use OfflineAudioContext to avoid hitting hardware context limits (usually 6)
+  const ctx = new OfflineAudioContext(numChannels, numSamples, sampleRate);
 
   const buffer = ctx.createBuffer(numChannels, numSamples, sampleRate);
   for (let ch = 0; ch < numChannels; ch++) {
